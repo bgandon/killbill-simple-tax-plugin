@@ -16,7 +16,6 @@
  */
 package org.killbill.billing.plugin.simpletax;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSetMultimap.builder;
 import static com.google.common.collect.Iterables.transform;
@@ -35,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joda.time.LocalDate;
@@ -82,15 +82,13 @@ import com.google.common.collect.SetMultimap;
  */
 public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
 
-    private static final int DEFAULT_SCALE = 2;
-    private static final String DEFAULT_TAX_ITEM_DESCRIPTION = "Tax";
-    private static final String DEFAULT_TAX_RATE = "0.20";
-    private static final String TAX_ITEM_DESCRIPTION = "VAT";
+    SimpleTaxConfigurationHandler configHandler;
 
-    public SimpleTaxInvoicePluginApi(final OSGIKillbillAPI killbillAPI,
-            final OSGIConfigPropertiesService configProperties, final OSGIKillbillLogService logService,
-            final Clock clock) {
-        super(killbillAPI, configProperties, logService, clock);
+    public SimpleTaxInvoicePluginApi(final SimpleTaxConfigurationHandler configHandler,
+            final OSGIKillbillAPI killbillAPI, final OSGIConfigPropertiesService configService,
+            final OSGIKillbillLogService logService, final Clock clock) {
+        super(killbillAPI, configService, logService, clock);
+        this.configHandler = configHandler;
     }
 
     /**
@@ -147,13 +145,13 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *             tax type}.
      */
     private InvoiceItem buildAdjustmentForTaxItem(final InvoiceItem taxItemToAdjust, final LocalDate date,
-            @Nullable final BigDecimal adjustmentAmount, @Nullable final String description) {
+            @Nullable final BigDecimal adjustmentAmount, @Nonnull final String description) {
         checkArgument(isTaxItem(taxItemToAdjust), "not a tax type: %s", taxItemToAdjust.getInvoiceItemType());
         if ((adjustmentAmount == null) || (ZERO.compareTo(adjustmentAmount) == 0)) {
             return null;
         }
         return createAdjustmentItem(taxItemToAdjust, taxItemToAdjust.getInvoiceId(), date, null, adjustmentAmount,
-                firstNonNull(description, DEFAULT_TAX_ITEM_DESCRIPTION));
+                description);
     }
 
     /**
@@ -186,13 +184,12 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *             taxable type}.
      */
     private InvoiceItem buildTaxItem(final InvoiceItem taxableItem, final LocalDate date, final BigDecimal taxAmount,
-            @Nullable final String description) {
+            @Nonnull final String description) {
         checkArgument(isTaxableItem(taxableItem), "not of a taxable type: %s", taxableItem.getInvoiceItemType());
         if ((taxAmount == null) || (ZERO.compareTo(taxAmount) == 0)) {
             return null;
         }
-        return createTaxItem(taxableItem, taxableItem.getInvoiceId(), date, null, taxAmount,
-                firstNonNull(description, DEFAULT_TAX_ITEM_DESCRIPTION));
+        return createTaxItem(taxableItem, taxableItem.getInvoiceId(), date, null, taxAmount, description);
     }
 
     /**
@@ -202,6 +199,8 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      * Subclasses might be interested in overriding this method, in order to
      * support more complex taxation systems.
      *
+     * @param cfg
+     *            the applicable plugin config for the current kill bill tenant
      * @param account
      *            the account to tax
      * @param invoice
@@ -210,16 +209,19 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *            the item to tax
      * @param amount
      *            the adjusted amount of the item to tax
+     *
      * @return the amount of tax that should be paid by the account
      */
-    protected BigDecimal computeTaxAmount(final Account account, final Invoice invoice, final InvoiceItem item,
-            final BigDecimal amount) {
-        return amount.multiply(new BigDecimal(DEFAULT_TAX_RATE)).setScale(DEFAULT_SCALE, HALF_UP);
+    protected BigDecimal computeTaxAmount(final SimpleTaxPluginConfig cfg, final Account account,
+            final Invoice invoice, final InvoiceItem item, final BigDecimal amount) {
+        return amount.multiply(cfg.getTaxRate()).setScale(cfg.getTaxAmountPrecision(), HALF_UP);
     }
 
     @Override
     public List<InvoiceItem> getAdditionalInvoiceItems(final Invoice newInvoice,
             final Iterable<PluginProperty> properties, final CallContext context) {
+
+        SimpleTaxPluginConfig cfg = configHandler.getConfigurable(context.getTenantId());
 
         Account account = getAccount(newInvoice.getAccountId(), context);
         Set<Invoice> allInvoices = listAllInvoicesHistoryOfAccount(newInvoice, context);
@@ -237,15 +239,17 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
                     continue;
                 }
                 BigDecimal adjustedAmount = toAdjustedAmount.apply(item);
-                BigDecimal expectedTaxAmount = computeTaxAmount(account, invoice, item, adjustedAmount);
+                BigDecimal expectedTaxAmount = computeTaxAmount(cfg, account, invoice, item, adjustedAmount);
 
                 Set<InvoiceItem> relatedTaxItems = currentTaxItems.get(item.getId());
                 BigDecimal currentTaxAmount = sumAmounts(transform(relatedTaxItems, toAdjustedAmount));
 
+                String taxItemDescription = cfg.getTaxItemDescription();
+
                 InvoiceItem newTaxItem = null;
                 if (currentTaxAmount.compareTo(expectedTaxAmount) < 0) {
                     BigDecimal missingTaxAmount = expectedTaxAmount.subtract(currentTaxAmount);
-                    newTaxItem = buildTaxItem(item, invoice.getInvoiceDate(), missingTaxAmount, TAX_ITEM_DESCRIPTION);
+                    newTaxItem = buildTaxItem(item, invoice.getInvoiceDate(), missingTaxAmount, taxItemDescription);
                 } else if (currentTaxAmount.compareTo(expectedTaxAmount) > 0) {
                     BigDecimal adjustmentAmount = expectedTaxAmount.subtract(currentTaxAmount);
                     final Collection<InvoiceItem> taxItems = relatedTaxItems;
@@ -255,7 +259,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
                     // item to have some VAT tax items and thus
                     // 'largestTaxItem' not to be null.
                     newTaxItem = buildAdjustmentForTaxItem(largestTaxItem, newInvoice.getInvoiceDate(),
-                            adjustmentAmount, TAX_ITEM_DESCRIPTION);
+                            adjustmentAmount, taxItemDescription);
                 }
 
                 if (newTaxItem != null) {

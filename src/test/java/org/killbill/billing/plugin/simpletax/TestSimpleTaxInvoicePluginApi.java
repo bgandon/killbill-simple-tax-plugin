@@ -29,6 +29,7 @@ import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildLogService;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.TestUtils.buildPayment;
+import static org.killbill.billing.plugin.simpletax.SimpleTaxActivator.PLUGIN_NAME;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,6 +39,7 @@ import static org.testng.collections.Lists.newArrayList;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
@@ -47,6 +49,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.PluginCallContext;
+import org.killbill.billing.tenant.api.TenantUserApi;
 import org.killbill.billing.test.helpers.InvoiceBuilder;
 import org.killbill.billing.test.helpers.InvoiceItemBuilder;
 import org.killbill.billing.test.helpers.Promise;
@@ -77,6 +80,8 @@ public class TestSimpleTaxInvoicePluginApi {
 
     @Mock
     InvoiceUserApi invoiceUserApi;
+    @Mock
+    TenantUserApi tenantUserApi;
 
     private Account account;
     private Invoice invoice1;
@@ -94,15 +99,18 @@ public class TestSimpleTaxInvoicePluginApi {
     public void setUp() throws Exception {
         account = buildAccount(EUR, "FR");
 
-        OSGIKillbillAPI killbillAPI = buildOSGIKillbillAPI(account,
+        OSGIKillbillAPI kbAPI = buildOSGIKillbillAPI(account,
                 buildPayment(account.getId(), account.getPaymentMethodId(), account.getCurrency()), null);
-        when(killbillAPI.getInvoiceUserApi()).thenReturn(invoiceUserApi);
+        when(kbAPI.getInvoiceUserApi()).thenReturn(invoiceUserApi);
+        when(kbAPI.getTenantUserApi()).thenReturn(tenantUserApi);
 
-        OSGIConfigPropertiesService configPropertiesService = mock(OSGIConfigPropertiesService.class);
         OSGIKillbillLogService logService = buildLogService();
+        SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, kbAPI, logService);
+        cfgHandler.setDefaultConfigurable(new SimpleTaxPluginConfig(new Properties()));
+
+        OSGIConfigPropertiesService cfgService = mock(OSGIConfigPropertiesService.class);
         Clock clock = new DefaultClock();
-        simpleTaxInvoicePluginApi = new SimpleTaxInvoicePluginApi(killbillAPI, configPropertiesService, logService,
-                clock);
+        simpleTaxInvoicePluginApi = new SimpleTaxInvoicePluginApi(cfgHandler, kbAPI, cfgService, logService, clock);
 
         Promise<InvoiceItem> taxable1 = new Promise<InvoiceItem>();
 
