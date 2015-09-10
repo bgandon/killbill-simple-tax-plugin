@@ -24,7 +24,7 @@ curl -v \
      -H 'Content-Type: text/plain' \
      -d \
 'org.killbill.billing.plugin.simpletax.tax-item.description=Tax
-org.killbill.billing.plugin.simpletax.tax-amount.precision=2
+org.killbill.billing.plugin.simpletax.tax-item.amount-precision=2
 org.killbill.billing.plugin.simpletax.tax-rate=0.20
 org.killbill.billing.plugin.simpletax.tax-rate.precision=2' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax

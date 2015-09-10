@@ -12,9 +12,9 @@ public class SimpleTaxPluginConfig {
 
     private static final String PFX = PROPERTY_PREFIX;
 
-    private static final String TAX_ITEM_DESC_PROPERTY = PFX + "tax-item-description";
-    private static final String TAX_AMOUNT_PRECISION_PROPERTY = PFX + "tax-amount-precision";
-    private static final String TAX_RATE_PRECISION_PROPERTY = PFX + "tax-rate-precision";
+    private static final String TAX_ITEM_DESC_PROPERTY = PFX + "tax-item.description";
+    private static final String TAX_AMOUNT_PRECISION_PROPERTY = PFX + "tax-item.amount.precision";
+    private static final String TAX_RATE_PRECISION_PROPERTY = PFX + "tax-rate.precision";
     private static final String TAX_RATE_PROPERTY = PFX + "tax-rate";
 
     private static final String DEFAULT_TAX_ITEM_DESC = "Tax";
