@@ -23,7 +23,7 @@ curl -v \
      -H 'X-Killbill-CreatedBy: admin' \
      -H 'Content-Type: text/plain' \
      -d \
-'org.killbill.billing.plugin.simpletax.tax-item.description=Tax
+'org.killbill.billing.plugin.simpletax.tax-item.description=tax
 org.killbill.billing.plugin.simpletax.tax-item.amount.precision=2
 org.killbill.billing.plugin.simpletax.tax-rate=0.20
 org.killbill.billing.plugin.simpletax.tax-rate.precision=2' \

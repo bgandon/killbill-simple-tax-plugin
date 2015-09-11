@@ -17,7 +17,7 @@ public class SimpleTaxPluginConfig {
     private static final String TAX_RATE_PRECISION_PROPERTY = PFX + "tax-rate.precision";
     private static final String TAX_RATE_PROPERTY = PFX + "tax-rate";
 
-    private static final String DEFAULT_TAX_ITEM_DESC = "Tax";
+    private static final String DEFAULT_TAX_ITEM_DESC = "tax";
     private static final int DEFAULT_TAX_AMOUNT_PRECISION = 2;
     private static final int DEFAULT_TAX_RATE_PRECISION = 2;
     private static final BigDecimal DEFAULT_TAX_RATE = new BigDecimal("0.20").setScale(DEFAULT_TAX_RATE_PRECISION,
