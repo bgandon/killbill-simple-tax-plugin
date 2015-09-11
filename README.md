@@ -36,9 +36,10 @@ The values above are the default values.
 Upcoming improvements
 ---------------------
 
-1. Implement cutoff dates for planned tax rate changes
-2. Implement conditions based on customer country when applying tax rate
-3. Implement different tax rates, based on invoice item types
+1. Add tax rate info to items, with `TagUserApi.addTags()`
+2. Implement cutoff dates for planned tax rate changes
+3. Implement conditional taxes, based on account country
+4. Implement conditional taxes, based on invoice items tags
 
 
 Author and License
