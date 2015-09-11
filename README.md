@@ -36,9 +36,9 @@ The values above are the default values.
 Upcoming improvements
 ---------------------
 
-1. Implement single-tenant config
-2. Implement multi-tenant config
-3. Implement cutoff dates for planned tax-rate changes
+1. Implement cutoff dates for planned tax rate changes
+2. Implement conditions based on customer country when applying tax rate
+3. Implement different tax rates, based on invoice item types
 
 
 Author and License
