@@ -121,15 +121,11 @@
                             org.killbill.billing.catalog.api;
                             org.killbill.billing.invoice.api;
                             org.killbill.billing.entitlement.api;
-                            org.killbill.billing.notification.api;
-                            org.killbill.billing.notification.plugin.api;
-                            org.killbill.billing.notification.plugin;
                             org.killbill.billing.osgi.api;
                             org.killbill.billing.osgi.api.config;
                             org.killbill.billing.tenant.api;
                             org.killbill.billing.usage.api;
                             org.killbill.billing.util.api;
-                            org.killbill.billing.currency.plugin.api;
                             org.killbill.billing.currency.api;
                             org.killbill.billing.security.api;
                             javax.annotation;
