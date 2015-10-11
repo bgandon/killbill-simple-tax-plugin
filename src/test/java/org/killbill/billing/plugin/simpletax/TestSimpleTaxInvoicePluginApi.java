@@ -72,11 +72,13 @@ public class TestSimpleTaxInvoicePluginApi {
     private static final int DEFAULT_SCALE = 2;
 
     private static final BigDecimal TWO = valueOf(2).setScale(DEFAULT_SCALE);
+    private static final BigDecimal EIGHT = valueOf(8).setScale(DEFAULT_SCALE);
+    private static final BigDecimal SEVEN = valueOf(7).setScale(DEFAULT_SCALE);
 
     private List<PluginProperty> properties = ImmutableList.<PluginProperty> of();
     private CallContext context = new PluginCallContext("killbill-simple-tax", new DateTime(), randomUUID());
 
-    private SimpleTaxInvoicePluginApi simpleTaxInvoicePluginApi;
+    private SimpleTaxInvoicePluginApi plugin;
 
     @Mock
     InvoiceUserApi invoiceUserApi;
@@ -84,19 +86,16 @@ public class TestSimpleTaxInvoicePluginApi {
     TenantUserApi tenantUserApi;
 
     private Account account;
-    private Invoice invoice1;
-    private Invoice invoice2;
+    private Invoice invoiceA, invoiceB, invoiceC, invoiceD, invoiceE;
 
     private Promise<InvoiceItem> tax1 = new Promise<InvoiceItem>();
-    private Promise<InvoiceItem> taxable2 = new Promise<InvoiceItem>();
+    private Promise<InvoiceItem> taxableB = new Promise<InvoiceItem>(), taxableC = new Promise<InvoiceItem>(),
+            taxableD = new Promise<InvoiceItem>(), taxableE = new Promise<InvoiceItem>();
 
     @BeforeClass(groups = "fast")
-    public void init() {
+    public void init() throws Exception {
         initMocks(this);
-    }
 
-    @BeforeMethod(groups = "fast")
-    public void setUp() throws Exception {
         account = buildAccount(EUR, "FR");
 
         OSGIKillbillAPI kbAPI = buildOSGIKillbillAPI(account,
@@ -110,36 +109,64 @@ public class TestSimpleTaxInvoicePluginApi {
 
         OSGIConfigPropertiesService cfgService = mock(OSGIConfigPropertiesService.class);
         Clock clock = new DefaultClock();
-        simpleTaxInvoicePluginApi = new SimpleTaxInvoicePluginApi(cfgHandler, kbAPI, cfgService, logService, clock);
+        plugin = new SimpleTaxInvoicePluginApi(cfgHandler, kbAPI, cfgService, logService, clock);
 
-        Promise<InvoiceItem> taxable1 = new Promise<InvoiceItem>();
+        Promise<InvoiceItem> taxableA = new Promise<InvoiceItem>();
 
-        invoice1 = new InvoiceBuilder()//
+        invoiceA = new InvoiceBuilder()//
                 .withAccount(account)//
                 .withItem(new InvoiceItemBuilder()//
-                        .withType(EXTERNAL_CHARGE).withAmount(TEN).thenSaveTo(taxable1))//
+                        .withType(EXTERNAL_CHARGE).withAmount(TEN).thenSaveTo(taxableA))//
                 .withItem(new InvoiceItemBuilder()//
-                        .withType(TAX).withLinkedItem(taxable1).withAmount(TWO).thenSaveTo(tax1))//
+                        .withType(TAX).withLinkedItem(taxableA).withAmount(TWO).thenSaveTo(tax1))//
                 .withItem(new InvoiceItemBuilder()//
-                        .withType(ITEM_ADJ).withLinkedItem(taxable1).withAmount(ONE.negate()))//
+                        .withType(ITEM_ADJ).withLinkedItem(taxableA).withAmount(ONE.negate()))//
                 .build();
 
-        invoice2 = new InvoiceBuilder()//
+        invoiceB = new InvoiceBuilder()//
                 .withAccount(account)//
-                .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(TEN).thenSaveTo(taxable2))//
-                .withItem(new InvoiceItemBuilder().withType(ITEM_ADJ).withLinkedItem(taxable1).withAmount(ONE.negate()))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(RECURRING).withAmount(TEN).thenSaveTo(taxableB))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(ITEM_ADJ).withLinkedItem(taxableA).withAmount(ONE.negate()))//
                 .build();
+
+        invoiceC = new InvoiceBuilder()//
+                .withAccount(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(EXTERNAL_CHARGE).withAmount(EIGHT).thenSaveTo(taxableC))//
+                .build();
+
+        invoiceD = new InvoiceBuilder()//
+                .withAccount(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(EXTERNAL_CHARGE).withAmount(EIGHT).thenSaveTo(taxableD))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(TAX).withLinkedItem(taxableD).withAmount(valueOf(1.6)))//
+                .build();
+
+        invoiceE = new InvoiceBuilder()//
+                .withAccount(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(RECURRING).withAmount(SEVEN).thenSaveTo(taxableE))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(ITEM_ADJ).withLinkedItem(taxableE).withAmount(TWO))//
+                .build();
+    }
+
+    @BeforeMethod(groups = "fast")
+    public void setUp() throws Exception {
     }
 
     @Test(groups = "fast")
     public void shouldAdjustIncorrectOldTaxItemAndTaxNewItem() throws Exception {
         // Given
-        Invoice newInvoice = invoice2;
+        Invoice newInvoice = invoiceB;
         when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoice1, invoice2));
+                .thenReturn(newArrayList(invoiceA, newInvoice));
 
         // When
-        List<InvoiceItem> items = simpleTaxInvoicePluginApi.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 2);
@@ -148,14 +175,98 @@ public class TestSimpleTaxInvoicePluginApi {
         assertEquals(item1.getInvoiceItemType(), ITEM_ADJ);
         assertEquals(item1.getLinkedItemId(), tax1.get().getId());
         assertEquals(item1.getAmount(), valueOf(-0.4).setScale(DEFAULT_SCALE));
-        assertEquals(item1.getInvoiceId(), invoice1.getId());
-        assertEquals(item1.getStartDate(), invoice1.getInvoiceDate());
+        assertEquals(item1.getInvoiceId(), invoiceA.getId());
+        assertEquals(item1.getStartDate(), invoiceA.getInvoiceDate());
 
         InvoiceItem item2 = items.get(1);
         assertEquals(item2.getInvoiceItemType(), TAX);
-        assertEquals(item2.getLinkedItemId(), taxable2.get().getId());
+        assertEquals(item2.getLinkedItemId(), taxableB.get().getId());
         assertEquals(item2.getAmount(), TWO);
-        assertEquals(item2.getInvoiceId(), invoice2.getId());
-        assertEquals(item2.getStartDate(), invoice2.getInvoiceDate());
+        assertEquals(item2.getInvoiceId(), invoiceB.getId());
+        assertEquals(item2.getStartDate(), invoiceB.getInvoiceDate());
+    }
+
+    @Test(groups = "fast")
+    public void shouldNotCreateNewTaxItemsInNewInvoiceProperlyTaxed() {
+        // Given
+        Invoice newInvoice = invoiceD;
+        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
+                .thenReturn(newArrayList(newInvoice));
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+    }
+
+    @Test(groups = "fast")
+    public void shouldNotCreateNewTaxItemsInHistoricalInvoices() {
+        // Given
+        Invoice newInvoice = invoiceD;
+        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
+                .thenReturn(newArrayList(invoiceC, newInvoice));
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+    }
+
+    @Test(groups = "fast")
+    public void shouldNotCreateNewTaxItemsInHistoricalInvoicesWithAdjustments() {
+        // Given
+        Invoice newInvoice = invoiceD;
+        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
+                .thenReturn(newArrayList(invoiceE, newInvoice));
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+    }
+
+    @Test(groups = "fast")
+    public void shouldCreateMissingTaxItemInNewlyCreatedInvoice() {
+        // Given
+        Invoice newInvoice = invoiceC;
+        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
+                .thenReturn(newArrayList(invoiceD, newInvoice));
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 1);
+
+        InvoiceItem item1 = items.get(0);
+        assertEquals(item1.getInvoiceId(), invoiceC.getId());
+        assertEquals(item1.getInvoiceItemType(), TAX);
+        assertEquals(item1.getLinkedItemId(), taxableC.get().getId());
+        assertEquals(item1.getAmount(), valueOf(1.6).setScale(DEFAULT_SCALE));
+        assertEquals(item1.getStartDate(), invoiceC.getInvoiceDate());
+    }
+
+    @Test(groups = "fast")
+    public void shouldCreateMissingTaxItemInNewlyCreatedInvoiceWithAdjustment() {
+        // Given
+        Invoice newInvoice = invoiceE;
+        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
+                .thenReturn(newArrayList(invoiceD, newInvoice));
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 1);
+
+        InvoiceItem item1 = items.get(0);
+        assertEquals(item1.getInvoiceId(), invoiceE.getId());
+        assertEquals(item1.getInvoiceItemType(), TAX);
+        assertEquals(item1.getLinkedItemId(), taxableE.get().getId());
+        assertEquals(item1.getAmount(), valueOf(1.8).setScale(DEFAULT_SCALE));
+        assertEquals(item1.getStartDate(), invoiceE.getInvoiceDate());
     }
 }

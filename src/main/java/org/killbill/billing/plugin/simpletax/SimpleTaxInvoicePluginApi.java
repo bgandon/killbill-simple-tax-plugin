@@ -28,7 +28,6 @@ import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.amountWithAdj
 import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.sumAmounts;
 
 import java.math.BigDecimal;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +42,7 @@ import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
+import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.clock.Clock;
 import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
@@ -201,19 +201,16 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *
      * @param cfg
      *            the applicable plugin config for the current kill bill tenant
-     * @param account
-     *            the account to tax
      * @param invoice
      *            the invoice of the item
      * @param item
      *            the item to tax
      * @param amount
      *            the adjusted amount of the item to tax
-     *
      * @return the amount of tax that should be paid by the account
      */
-    protected BigDecimal computeTaxAmount(final SimpleTaxPluginConfig cfg, final Account account,
-            final Invoice invoice, final InvoiceItem item, final BigDecimal amount) {
+    protected BigDecimal computeTaxAmount(final SimpleTaxPluginConfig cfg, final Invoice invoice,
+            final InvoiceItem item, final BigDecimal amount) {
         return amount.multiply(cfg.getTaxRate()).setScale(cfg.getTaxAmountPrecision(), HALF_UP);
     }
 
@@ -221,58 +218,175 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
     public List<InvoiceItem> getAdditionalInvoiceItems(final Invoice newInvoice,
             final Iterable<PluginProperty> properties, final CallContext context) {
 
+        Set<Invoice> allInvoices = allInvoicesOfAccount(newInvoice, context);
+
+        TaxComputationContext ctx = createTaxComputationContext(allInvoices, newInvoice, context);
+
+        List<InvoiceItem> additionalItems = new LinkedList<InvoiceItem>();
+        for (Invoice invoice : allInvoices) {
+
+            List<InvoiceItem> newItems;
+            if (invoice.equals(newInvoice)) {
+                newItems = computeTaxOrAdjustmentItemsForNewInvoice(invoice, ctx);
+            } else {
+                newItems = computeAdjustmentItemsForHistoricalInvoice(invoice, ctx);
+            }
+            additionalItems.addAll(newItems);
+        }
+        return additionalItems;
+    }
+
+    /**
+     * Pre-compute data that will be useful to computing tax items and tax
+     * adjustment items.
+     *
+     * @param allInvoices
+     *            A set of all invoices for the account being treated.
+     * @param newInvoice
+     *            The newly created invoice to add tax to or adjust tax items
+     *            of.
+     * @param context
+     *            The call context.
+     * @return Helpful pre-computed data for adding or adjusting taxes in the
+     *         account invoices.
+     */
+    private TaxComputationContext createTaxComputationContext(final Set<Invoice> allInvoices, final Invoice newInvoice,
+            final CallContext context) {
         SimpleTaxPluginConfig cfg = configHandler.getConfigurable(context.getTenantId());
 
         Account account = getAccount(newInvoice.getAccountId(), context);
-        Set<Invoice> allInvoices = listAllInvoicesHistoryOfAccount(newInvoice, context);
 
         Function<InvoiceItem, BigDecimal> toAdjustedAmount = toAdjustedAmount(allInvoices);
         Ordering<InvoiceItem> byAdjustedAmount = natural().onResultOf(toAdjustedAmount);
 
-        List<InvoiceItem> additionalTaxItems = new LinkedList<InvoiceItem>();
-        for (Invoice invoice : allInvoices) {
+        TaxComputationContext ctx = new TaxComputationContext(cfg, account, toAdjustedAmount, byAdjustedAmount);
+        return ctx;
+    }
 
-            SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(invoice);
+    /**
+     * Compute adjustment items on existing tax items in a <em>historical</em>
+     * invoice.
+     * <p>
+     * In historical invoices, when a taxable item has no tax item, we are not
+     * allowed to add any tax to it.
+     * <p>
+     * All we can do is adjust already taxed items. This happens when taxed
+     * items have been adjusted. Then their related tax item also need being
+     * adjusted.
+     *
+     * @param invoice
+     *            A historical invoice.
+     * @param ctx
+     *            Some pre-computed data that will help.
+     * @return A list of new adjustment items to add to the invoice. Never
+     *         {@code null}.
+     */
+    private List<InvoiceItem> computeAdjustmentItemsForHistoricalInvoice(final Invoice invoice,
+            final TaxComputationContext ctx) {
 
-            for (InvoiceItem item : invoice.getInvoiceItems()) {
-                if (!isTaxableItem(item)) {
-                    continue;
-                }
-                BigDecimal adjustedAmount = toAdjustedAmount.apply(item);
-                BigDecimal expectedTaxAmount = computeTaxAmount(cfg, account, invoice, item, adjustedAmount);
+        SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(invoice);
 
-                Set<InvoiceItem> relatedTaxItems = currentTaxItems.get(item.getId());
-                BigDecimal currentTaxAmount = sumAmounts(transform(relatedTaxItems, toAdjustedAmount));
+        List<InvoiceItem> newItems = new LinkedList<InvoiceItem>();
+        for (InvoiceItem item : invoice.getInvoiceItems()) {
+            if (!isTaxableItem(item)) {
+                continue;
+            }
 
-                String taxItemDescription = cfg.getTaxItemDescription();
+            Set<InvoiceItem> relatedTaxItems = currentTaxItems.get(item.getId());
+            if (relatedTaxItems.size() <= 0) {
+                // When item has never been taxed in an *historical* invoice,
+                // we cannot take the responsibility here for adding tax to
+                // it like an afterthought, so we just don't do anything.
+                continue;
+            }
 
-                InvoiceItem newTaxItem = null;
-                if (currentTaxAmount.compareTo(expectedTaxAmount) < 0) {
-                    BigDecimal missingTaxAmount = expectedTaxAmount.subtract(currentTaxAmount);
-                    newTaxItem = buildTaxItem(item, invoice.getInvoiceDate(), missingTaxAmount, taxItemDescription);
-                } else if (currentTaxAmount.compareTo(expectedTaxAmount) > 0) {
-                    BigDecimal adjustmentAmount = expectedTaxAmount.subtract(currentTaxAmount);
-                    final Collection<InvoiceItem> taxItems = relatedTaxItems;
-                    InvoiceItem largestTaxItem = byAdjustedAmount.max(taxItems);
-                    // Here 'currentTaxAmount' should be > 0 (if
-                    // 'expectedTaxAmount' properly is > 0), so we expect the
-                    // item to have some VAT tax items and thus
-                    // 'largestTaxItem' not to be null.
-                    newTaxItem = buildAdjustmentForTaxItem(largestTaxItem, newInvoice.getInvoiceDate(),
-                            adjustmentAmount, taxItemDescription);
-                }
+            BigDecimal adjustedAmount = ctx.toAdjustedAmount().apply(item);
+            BigDecimal expectedTaxAmount = computeTaxAmount(ctx.getConfig(), invoice, item, adjustedAmount);
+            BigDecimal currentTaxAmount = sumAmounts(transform(relatedTaxItems, ctx.toAdjustedAmount()));
 
-                if (newTaxItem != null) {
-                    additionalTaxItems.add(newTaxItem);
-                }
+            String taxItemDescription = ctx.getConfig().getTaxItemDescription();
+
+            if (currentTaxAmount.compareTo(expectedTaxAmount) != 0) {
+                BigDecimal adjustmentAmount = expectedTaxAmount.subtract(currentTaxAmount);
+                InvoiceItem largestTaxItem = ctx.byAdjustedAmount().max(relatedTaxItems);
+
+                InvoiceItem adjItem = buildAdjustmentForTaxItem(largestTaxItem, invoice.getInvoiceDate(),
+                        adjustmentAmount, taxItemDescription);
+                newItems.add(adjItem);
             }
         }
-        return additionalTaxItems;
+        return newItems;
+    }
+
+    /**
+     * Compute tax items against taxable items, in a <em>newly created</em>
+     * invoice, or adjust existing tax items that don't match the expected tax
+     * amount, taking any adjustments into consideration.
+     *
+     * @param newInvoice
+     *            A newly created invoice.
+     * @param ctx
+     *            Some pre-computed data that will help.
+     * @return A list of new tax items, or new adjustment items to add to the
+     *         invoice. Never {@code null}.
+     */
+    private List<InvoiceItem> computeTaxOrAdjustmentItemsForNewInvoice(final Invoice newInvoice,
+            final TaxComputationContext ctx) {
+
+        SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(newInvoice);
+
+        List<InvoiceItem> newItems = new LinkedList<InvoiceItem>();
+        for (InvoiceItem item : newInvoice.getInvoiceItems()) {
+            if (!isTaxableItem(item)) {
+                continue;
+            }
+            BigDecimal adjustedAmount = ctx.toAdjustedAmount().apply(item);
+            BigDecimal expectedTaxAmount = computeTaxAmount(ctx.getConfig(), newInvoice, item, adjustedAmount);
+
+            Set<InvoiceItem> relatedTaxItems = currentTaxItems.get(item.getId());
+            BigDecimal currentTaxAmount = sumAmounts(transform(relatedTaxItems, ctx.toAdjustedAmount()));
+
+            String taxItemDescription = ctx.getConfig().getTaxItemDescription();
+
+            if (currentTaxAmount.compareTo(expectedTaxAmount) < 0) {
+                BigDecimal missingTaxAmount = expectedTaxAmount.subtract(currentTaxAmount);
+                if (relatedTaxItems.size() <= 0) {
+                    // In case a taxable item has never been taxed yet, we are
+                    // allowed to add tax to it since it belongs to a newly
+                    // created invoice.
+                    InvoiceItem newTaxItem = buildTaxItem(item, newInvoice.getInvoiceDate(), missingTaxAmount,
+                            taxItemDescription);
+                    newItems.add(newTaxItem);
+                } else {
+                    // Here we know that 'relatedTaxItems' is not empty so we
+                    // have some tax items and thus 'largestTaxItem' not to be
+                    // null.
+                    InvoiceItem largestTaxItem = ctx.byAdjustedAmount().max(relatedTaxItems);
+
+                    InvoiceItem positiveAdjItem = buildAdjustmentForTaxItem(largestTaxItem,
+                            newInvoice.getInvoiceDate(), missingTaxAmount, taxItemDescription);
+                    newItems.add(positiveAdjItem);
+                }
+            } else if (currentTaxAmount.compareTo(expectedTaxAmount) > 0) {
+                BigDecimal negativeAdjAmount = expectedTaxAmount.subtract(currentTaxAmount);
+
+                // Here 'currentTaxAmount' should be > 0 (if 'expectedTaxAmount'
+                // properly is > 0), so we expect the item to have some tax
+                // items and thus 'largestTaxItem' not to be null.
+                InvoiceItem largestTaxItem = ctx.byAdjustedAmount().max(relatedTaxItems);
+
+                InvoiceItem negativeAdjItem = buildAdjustmentForTaxItem(largestTaxItem, newInvoice.getInvoiceDate(),
+                        negativeAdjAmount, taxItemDescription);
+                newItems.add(negativeAdjItem);
+            }
+        }
+        return newItems;
     }
 
     /**
      * Lists all invoice of account as {@linkplain ImmutableSet immutable set},
-     * including the one that is being created.
+     * including the passed {@code newInvoice} that is the new invoice being
+     * currently created.
      * <p>
      * This implementation is indifferent to the persistence status of the
      * passed {@code newInvoice}. Persisted and not persisted invoices are
@@ -288,7 +402,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      * @return the set of all invoices for the account, including the new one to
      *         build.
      */
-    private Set<Invoice> listAllInvoicesHistoryOfAccount(final Invoice newInvoice, final CallContext context) {
+    private Set<Invoice> allInvoicesOfAccount(final Invoice newInvoice, final CallContext context) {
         ImmutableSet.Builder<Invoice> builder = ImmutableSet.builder();
         builder.addAll(getInvoicesByAccountId(newInvoice.getAccountId(), context));
 
