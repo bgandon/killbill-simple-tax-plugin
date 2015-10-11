@@ -117,8 +117,10 @@
                         <Export-Package/>
                         <Private-Package>org.killbill.billing.plugin.simpletax.*</Private-Package>
                         <!-- Optional resolution because exported by the Felix system bundle -->
-                        <!-- See: <https://github.com/killbill/killbill-plugin-framework-java/blob/master/README.md#usage> -->
+                        <!-- For the simple-tax-plugin, we specify a minimal list of imported packages. -->
+                        <!-- See ref. at: <https://github.com/killbill/killbill-plugin-framework-java/blob/master/README.md#usage> -->
                         <Import-Package>
+                            org.killbill.billing.account.api;
                             org.killbill.billing.catalog.api;
                             org.killbill.billing.invoice.api;
                             org.killbill.billing.entitlement.api;
@@ -129,6 +131,7 @@
                             org.killbill.billing.osgi.api.config;
                             org.killbill.billing.payment.api;
                             org.killbill.billing.payment.plugin.api;
+                            org.killbill.billing.routing.plugin.api;
                             org.killbill.billing.tenant.api;
                             org.killbill.billing.usage.api;
                             org.killbill.billing.util.api;
