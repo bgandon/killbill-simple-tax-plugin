@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.plumbing;
 
 import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
 
@@ -22,6 +22,8 @@ import java.util.Hashtable;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
+import org.killbill.billing.plugin.simpletax.SimpleTaxInvoicePluginApi;
+import org.killbill.billing.plugin.simpletax.SimpleTaxPluginConfig;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;
@@ -39,11 +41,6 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
     /** The name for this plugin. */
     public static final String PLUGIN_NAME = "killbill-simple-tax";
 
-    /**
-     * The prefix to use for configuration properties (either system properties,
-     * or per-tenant plugin configuration properties).
-     */
-    public static final String PROPERTY_PREFIX = "org.killbill.billing.plugin.simpletax.";
 
     private SimpleTaxConfigurationHandler configHandler;
 

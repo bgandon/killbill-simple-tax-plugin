@@ -3,7 +3,6 @@ package org.killbill.billing.plugin.simpletax;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.primitives.Ints.tryParse;
 import static java.math.RoundingMode.HALF_UP;
-import static org.killbill.billing.plugin.simpletax.SimpleTaxActivator.PROPERTY_PREFIX;
 
 import java.math.BigDecimal;
 import java.util.Properties;
@@ -15,12 +14,16 @@ import java.util.Properties;
  */
 public class SimpleTaxPluginConfig {
 
-    private static final String PFX = PROPERTY_PREFIX;
+    /**
+     * The prefix to use for configuration properties (either system properties,
+     * or per-tenant plugin configuration properties).
+     */
+    public static final String PROPERTY_PREFIX = "org.killbill.billing.plugin.simpletax.";
 
-    private static final String TAX_ITEM_DESC_PROPERTY = PFX + "tax-item.description";
-    private static final String TAX_AMOUNT_PRECISION_PROPERTY = PFX + "tax-item.amount.precision";
-    private static final String TAX_RATE_PRECISION_PROPERTY = PFX + "tax-rate.precision";
-    private static final String TAX_RATE_PROPERTY = PFX + "tax-rate";
+    private static final String TAX_ITEM_DESC_PROPERTY = PROPERTY_PREFIX + "tax-item.description";
+    private static final String TAX_AMOUNT_PRECISION_PROPERTY = PROPERTY_PREFIX + "tax-item.amount.precision";
+    private static final String TAX_RATE_PRECISION_PROPERTY = PROPERTY_PREFIX + "tax-rate.precision";
+    private static final String TAX_RATE_PROPERTY = PROPERTY_PREFIX + "tax-rate";
 
     private static final String DEFAULT_TAX_ITEM_DESC = "tax";
     private static final int DEFAULT_TAX_AMOUNT_PRECISION = 2;

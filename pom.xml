@@ -113,7 +113,7 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>org.killbill.billing.plugin.simpletax.SimpleTaxActivator</Bundle-Activator>
+                        <Bundle-Activator>org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator</Bundle-Activator>
                         <Export-Package/>
                         <Private-Package>org.killbill.billing.plugin.simpletax.*</Private-Package>
                         <!-- Optional resolution because exported by the Felix system bundle -->
