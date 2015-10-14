@@ -19,7 +19,7 @@ package org.killbill.billing.plugin.simpletax.plumbing;
 import java.util.Properties;
 
 import org.killbill.billing.plugin.api.notification.PluginTenantConfigurableConfigurationHandler;
-import org.killbill.billing.plugin.simpletax.SimpleTaxPluginConfig;
+import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 
@@ -28,7 +28,7 @@ import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
  *
  * @author Benjamin Gandon
  */
-public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfigurationHandler<SimpleTaxPluginConfig> {
+public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfigurationHandler<SimpleTaxConfig> {
 
     /**
      * Constructs a new configuration handler.
@@ -47,7 +47,7 @@ public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfi
     }
 
     @Override
-    protected SimpleTaxPluginConfig createConfigurable(final Properties pluginConfig) {
-        return new SimpleTaxPluginConfig(pluginConfig);
+    protected SimpleTaxConfig createConfigurable(final Properties pluginConfig) {
+        return new SimpleTaxConfig(pluginConfig);
     }
 }

@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.InvoiceItem;
-import org.killbill.billing.plugin.simpletax.SimpleTaxPluginConfig;
+import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
@@ -33,7 +33,7 @@ import com.google.common.collect.Ordering;
  */
 public class TaxComputationContext {
 
-    private SimpleTaxPluginConfig config;
+    private SimpleTaxConfig config;
 
     private Account account;
 
@@ -54,7 +54,7 @@ public class TaxComputationContext {
      *            An ordering that orders {@link InvoiceItem}s by adjusted
      *            amount.
      */
-    public TaxComputationContext(final SimpleTaxPluginConfig config, final Account account,
+    public TaxComputationContext(final SimpleTaxConfig config, final Account account,
             final Function<InvoiceItem, BigDecimal> toAdjustedAmount, final Ordering<InvoiceItem> byAdjustedAmount) {
         super();
         this.config = config;
@@ -66,7 +66,7 @@ public class TaxComputationContext {
     /**
      * @return The plugin configuration.
      */
-    public SimpleTaxPluginConfig getConfig() {
+    public SimpleTaxConfig getConfig() {
         return config;
     }
 

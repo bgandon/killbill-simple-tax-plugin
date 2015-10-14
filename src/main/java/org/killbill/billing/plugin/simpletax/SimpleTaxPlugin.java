@@ -81,7 +81,7 @@ import com.google.common.collect.SetMultimap;
  *
  * @author Benjamin Gandon
  */
-public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
+public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
     private SimpleTaxConfigurationHandler configHandler;
 
@@ -100,7 +100,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      * @param clock
      *            The clock service to use when accessing the current time.
      */
-    public SimpleTaxInvoicePluginApi(final SimpleTaxConfigurationHandler configHandler,
+    public SimpleTaxPlugin(final SimpleTaxConfigurationHandler configHandler,
             final OSGIKillbillAPI killbillAPI, final OSGIConfigPropertiesService configService,
             final OSGIKillbillLogService logService, final Clock clock) {
         super(killbillAPI, configService, logService, clock);
@@ -225,7 +225,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *            the adjusted amount of the item to tax
      * @return the amount of tax that should be paid by the account
      */
-    protected BigDecimal computeTaxAmount(final SimpleTaxPluginConfig cfg, final Invoice invoice,
+    protected BigDecimal computeTaxAmount(final SimpleTaxConfig cfg, final Invoice invoice,
             final InvoiceItem item, final BigDecimal amount) {
         return amount.multiply(cfg.getTaxRate()).setScale(cfg.getTaxAmountPrecision(), HALF_UP);
     }
@@ -297,7 +297,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      */
     private TaxComputationContext createTaxComputationContext(final Set<Invoice> allInvoices, final Invoice newInvoice,
             final CallContext context) {
-        SimpleTaxPluginConfig cfg = configHandler.getConfigurable(context.getTenantId());
+        SimpleTaxConfig cfg = configHandler.getConfigurable(context.getTenantId());
 
         Account account = getAccount(newInvoice.getAccountId(), context);
 

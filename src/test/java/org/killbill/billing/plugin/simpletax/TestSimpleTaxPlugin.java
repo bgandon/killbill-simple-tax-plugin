@@ -69,7 +69,7 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableList;
 
 @SuppressWarnings("javadoc")
-public class TestSimpleTaxInvoicePluginApi {
+public class TestSimpleTaxPlugin {
 
     private static final int DEFAULT_SCALE = 2;
 
@@ -80,7 +80,7 @@ public class TestSimpleTaxInvoicePluginApi {
     private List<PluginProperty> properties = ImmutableList.<PluginProperty> of();
     private CallContext context = new PluginCallContext("killbill-simple-tax", new DateTime(), randomUUID());
 
-    private SimpleTaxInvoicePluginApi plugin;
+    private SimpleTaxPlugin plugin;
 
     @Mock
     InvoiceUserApi invoiceUserApi;
@@ -107,11 +107,11 @@ public class TestSimpleTaxInvoicePluginApi {
 
         OSGIKillbillLogService logService = buildLogService();
         SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, kbAPI, logService);
-        cfgHandler.setDefaultConfigurable(new SimpleTaxPluginConfig(new Properties()));
+        cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(new Properties()));
 
         OSGIConfigPropertiesService cfgService = mock(OSGIConfigPropertiesService.class);
         Clock clock = new DefaultClock();
-        plugin = new SimpleTaxInvoicePluginApi(cfgHandler, kbAPI, cfgService, logService, clock);
+        plugin = new SimpleTaxPlugin(cfgHandler, kbAPI, cfgService, logService, clock);
 
         Promise<InvoiceItem> taxableA = new Promise<InvoiceItem>();
 

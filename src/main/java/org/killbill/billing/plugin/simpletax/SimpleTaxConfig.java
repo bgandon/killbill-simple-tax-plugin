@@ -12,7 +12,7 @@ import java.util.Properties;
  *
  * @author Benjamin Gandon
  */
-public class SimpleTaxPluginConfig {
+public class SimpleTaxConfig {
 
     /**
      * The prefix to use for configuration properties (either system properties,
@@ -43,7 +43,7 @@ public class SimpleTaxPluginConfig {
      * @param cfg
      *            The configuration properties to use.
      */
-    public SimpleTaxPluginConfig(final Properties cfg) {
+    public SimpleTaxConfig(final Properties cfg) {
         taxItemDescription = string(cfg, TAX_ITEM_DESC_PROPERTY, DEFAULT_TAX_ITEM_DESC);
 
         taxAmountPrecision = integer(cfg, TAX_AMOUNT_PRECISION_PROPERTY, DEFAULT_TAX_AMOUNT_PRECISION);

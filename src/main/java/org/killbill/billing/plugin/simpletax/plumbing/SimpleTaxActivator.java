@@ -22,8 +22,8 @@ import java.util.Hashtable;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
-import org.killbill.billing.plugin.simpletax.SimpleTaxInvoicePluginApi;
-import org.killbill.billing.plugin.simpletax.SimpleTaxPluginConfig;
+import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
+import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;
@@ -92,13 +92,13 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
      * configuration manager (a.k.a. “config handler”).
      */
     private void createDefaultConfig() {
-        SimpleTaxPluginConfig defaultConfig = configHandler.createConfigurable(getConfigService().getProperties());
+        SimpleTaxConfig defaultConfig = configHandler.createConfigurable(getConfigService().getProperties());
         configHandler.setDefaultConfigurable(defaultConfig);
     }
 
     private InvoicePluginApi createPlugin() {
         Clock clock = new DefaultClock();
-        return new SimpleTaxInvoicePluginApi(configHandler, killbillAPI, getConfigService(), logService, clock);
+        return new SimpleTaxPlugin(configHandler, killbillAPI, getConfigService(), logService, clock);
     }
 
     private void registerInvoicePluginApi(final BundleContext context, final InvoicePluginApi plugin) {
