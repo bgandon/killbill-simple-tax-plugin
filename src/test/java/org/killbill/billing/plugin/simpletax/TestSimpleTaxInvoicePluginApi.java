@@ -67,6 +67,7 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
+@SuppressWarnings("javadoc")
 public class TestSimpleTaxInvoicePluginApi {
 
     private static final int DEFAULT_SCALE = 2;

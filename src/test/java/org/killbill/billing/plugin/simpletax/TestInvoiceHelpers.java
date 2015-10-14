@@ -16,6 +16,7 @@
  */
 package org.killbill.billing.plugin.simpletax;
 
+@SuppressWarnings("javadoc")
 public class TestInvoiceHelpers {
 
 }

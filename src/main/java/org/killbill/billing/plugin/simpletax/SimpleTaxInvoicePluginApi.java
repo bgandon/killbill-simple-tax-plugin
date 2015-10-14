@@ -82,8 +82,23 @@ import com.google.common.collect.SetMultimap;
  */
 public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
 
-    SimpleTaxConfigurationHandler configHandler;
+    private SimpleTaxConfigurationHandler configHandler;
 
+    /**
+     * Creates a new simple-tax plugin.
+     *
+     * @param configHandler
+     *            The configuration handler to use for this plugin instance.
+     * @param killbillAPI
+     *            The Kill Bill meta-API.
+     * @param configService
+     *            The service to use for accessing the plugin configuration
+     *            properties.
+     * @param logService
+     *            The service to use when logging events.
+     * @param clock
+     *            The clock service to use when accessing the current time.
+     */
     public SimpleTaxInvoicePluginApi(final SimpleTaxConfigurationHandler configHandler,
             final OSGIKillbillAPI killbillAPI, final OSGIConfigPropertiesService configService,
             final OSGIKillbillLogService logService, final Clock clock) {
@@ -178,7 +193,7 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      *            an optional description for the tax item to create, or
      *            {@code null} if a default description is fine
      *
-     * @return
+     * @return A new tax item or {@code null}.
      * @throws IllegalArgumentException
      *             if {@code taxableItem} is not {@linkplain #isTaxableItem of a
      *             taxable type}.
@@ -214,6 +229,35 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
         return amount.multiply(cfg.getTaxRate()).setScale(cfg.getTaxAmountPrecision(), HALF_UP);
     }
 
+    /**
+     * Returns additional invoice items to be added to the invoice upon
+     * creation. These can be new tax items, or adjustments on existing tax
+     * items.
+     * <p>
+     * The first goal here is to list missing tax items in the passed invoice
+     * that is being created.
+     * <p>
+     * Then, adjustments might have been created on any historical invoice of
+     * the account. Thus, this method also lists necessary adjustments to any
+     * tax items in any historical invoices.
+     * <p>
+     * But no new tax item is listed for historical invoices. If a taxable item
+     * has not been taxed at the time, we estimated here that there might be a
+     * good reason for that.
+     *
+     * @param newInvoice
+     *            The invoice that is being created.
+     * @param properties
+     *            Undocumented. No clue about what kind of plugin properties
+     *            this is supposed to provide. Don't use this until it is
+     *            properly documented. Currently in Kill Bill version 0.15.6,
+     *            this is always an immutable empty list.
+     * @param context
+     *            The call context.
+     * @return The list of new tax items (on the invoice being created), or
+     *         adjustments on existing tax items (on any historical invoice of
+     *         the same account).
+     */
     @Override
     public List<InvoiceItem> getAdditionalInvoiceItems(final Invoice newInvoice,
             final Iterable<PluginProperty> properties, final CallContext context) {
@@ -443,12 +487,12 @@ public class SimpleTaxInvoicePluginApi extends PluginInvoicePluginApi {
      */
     private Function<InvoiceItem, BigDecimal> toAdjustedAmount(final Set<Invoice> allInvoices) {
         final Multimap<UUID, InvoiceItem> allAdjustments = allAjdustmentsGroupedByAdjustedItem(allInvoices);
-        Function<InvoiceItem, BigDecimal> toAdjustedAmount = new Function<InvoiceItem, BigDecimal>() {
+
+        return new Function<InvoiceItem, BigDecimal>() {
             @Override
             public BigDecimal apply(final InvoiceItem item) {
                 return amountWithAdjustments(item, allAdjustments);
             }
         };
-        return toAdjustedAmount;
     }
 }

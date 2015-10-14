@@ -18,16 +18,38 @@ package org.killbill.billing.test.helpers;
 
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * A simple promise object.
+ *
+ * @author Benjamin Gandon
+ * @param <T>
+ *            The type of the object that is promised.
+ */
 public class Promise<T> {
     boolean isSet = false;
     T value;
 
+    /**
+     * Resolve the promise with the given instance.
+     *
+     * @param value
+     *            The value for the promised object.
+     * @throws IllegalStateException
+     *             When the promise has already been resolved.
+     */
     public synchronized void resolve(final T value) {
         checkState(!isSet, "already resolved promise");
         this.value = value;
         isSet = true;
     }
 
+    /**
+     * Obtain the promised instance.
+     * 
+     * @return The promised object.
+     * @throws IllegalStateException
+     *             When the promise has not already been resolved.
+     */
     public synchronized T get() {
         checkState(isSet, "unresolved promise");
         return value;

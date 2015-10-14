@@ -36,8 +36,13 @@ import org.osgi.framework.BundleContext;
  */
 public class SimpleTaxActivator extends KillbillActivatorBase {
 
+    /** The name for this plugin. */
     public static final String PLUGIN_NAME = "killbill-simple-tax";
 
+    /**
+     * The prefix to use for configuration properties (either system properties,
+     * or per-tenant plugin configuration properties).
+     */
     public static final String PROPERTY_PREFIX = "org.killbill.billing.plugin.simpletax.";
 
     private SimpleTaxConfigurationHandler configHandler;

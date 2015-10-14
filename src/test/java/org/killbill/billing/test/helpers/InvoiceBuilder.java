@@ -24,6 +24,7 @@ import java.util.List;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
 
+@SuppressWarnings("javadoc")
 public class InvoiceBuilder implements Builder<Invoice> {
     Account account;
     List<InvoiceItemBuilder> itemsBuilders = newArrayList();

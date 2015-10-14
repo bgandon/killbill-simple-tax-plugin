@@ -27,6 +27,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceItemType;
 import org.killbill.billing.plugin.api.invoice.PluginInvoiceItem;
 
+@SuppressWarnings("javadoc")
 public class InvoiceItemBuilder implements Builder<InvoiceItem> {
     Invoice invoice;
     InvoiceItemType type;

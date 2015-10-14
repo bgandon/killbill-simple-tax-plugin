@@ -8,6 +8,11 @@ import static org.killbill.billing.plugin.simpletax.SimpleTaxActivator.PROPERTY_
 import java.math.BigDecimal;
 import java.util.Properties;
 
+/**
+ * A configuration accessor for the simple-tax plugin.
+ *
+ * @author Benjamin Gandon
+ */
 public class SimpleTaxPluginConfig {
 
     private static final String PFX = PROPERTY_PREFIX;
@@ -28,6 +33,13 @@ public class SimpleTaxPluginConfig {
     private int taxRatePrecision;
     private BigDecimal taxRate;
 
+    /**
+     * Construct a new configuration accessor for the given configuration
+     * properties.
+     *
+     * @param cfg
+     *            The configuration properties to use.
+     */
     public SimpleTaxPluginConfig(final Properties cfg) {
         taxItemDescription = string(cfg, TAX_ITEM_DESC_PROPERTY, DEFAULT_TAX_ITEM_DESC);
 
@@ -37,6 +49,21 @@ public class SimpleTaxPluginConfig {
         taxRate = bigDecimal(cfg, TAX_RATE_PROPERTY, DEFAULT_TAX_RATE, getTaxRatePrecision());
     }
 
+    /**
+     * Utility method to construct a {@link BigDecimal} instance from a
+     * configuration property, or return a default value.
+     *
+     * @param cfg
+     *            The configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultValue
+     *            The default value.
+     * @param applicableScale
+     *            The default scale to apply.
+     * @return A new {@link BigDecimal} instance reflecting the designated
+     *         configuration property, or the default value.
+     */
     private static BigDecimal bigDecimal(final Properties cfg, final String propName, final BigDecimal defaultValue,
             final int applicableScale) {
         String strValue = cfg.getProperty(propName);
@@ -59,19 +86,33 @@ public class SimpleTaxPluginConfig {
         return cfg.getProperty(propName, defaultValue);
     }
 
+    /**
+     * @return The {@linkplain BigDecimal#setScale scale} to use for amounts in
+     *         invoices.
+     */
     public int getTaxAmountPrecision() {
         return taxAmountPrecision;
     }
 
+    /**
+     * @return The description for tax items in invoices. E.g. {@code "VAT"}.
+     */
     public String getTaxItemDescription() {
         return taxItemDescription;
     }
 
+    /**
+     * @return The rate to apply when adding tax items to invoice items.
+     */
     public BigDecimal getTaxRate() {
         return taxRate;
     }
 
-    public int getTaxRatePrecision() {
+    /**
+     * @return The {@linkplain BigDecimal#setScale scale} that has been used
+     *         when constructing {@linkplain #getTaxRate() the tax rate}.
+     */
+    protected int getTaxRatePrecision() {
         return taxRatePrecision;
     }
 }
