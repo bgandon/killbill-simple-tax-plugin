@@ -38,37 +38,40 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
 
     @Override
     public InvoiceItem build() {
-        String description = "TestNG " + type.name();
+        UUID id = randomUUID();
+        UUID invoiceId = invoice == null ? null : invoice.getId();
+        UUID accountId = invoice == null ? null : invoice.getAccountId();
+        String description = type == null ? null : "Test " + type.name();
         UUID linkedItemId = linkedItem == null ? null : linkedItem.get().getId();
-        PluginInvoiceItem item = new PluginInvoiceItem(randomUUID(), type, invoice.getId(), invoice.getAccountId(),
-                null, null, amount, EUR, description, null, null, null, null, null, linkedItemId, null, null, null);
+        PluginInvoiceItem item = new PluginInvoiceItem(id, type, invoiceId, accountId, null, null, amount, EUR,
+                description, null, null, null, null, null, linkedItemId, null, null, null);
         if (builtItemHolder != null) {
             builtItemHolder.resolve(item);
         }
         return item;
     }
 
-    public InvoiceItemBuilder withInvoice(final Invoice invoice) {
+    public InvoiceItemBuilder withInvoice(Invoice invoice) {
         this.invoice = invoice;
         return this;
     }
 
-    public InvoiceItemBuilder withType(final InvoiceItemType type) {
+    public InvoiceItemBuilder withType(InvoiceItemType type) {
         this.type = type;
         return this;
     }
 
-    public InvoiceItemBuilder withAmount(final BigDecimal amount) {
+    public InvoiceItemBuilder withAmount(BigDecimal amount) {
         this.amount = amount;
         return this;
     }
 
-    public InvoiceItemBuilder withLinkedItem(final Promise<InvoiceItem> linkedItem) {
+    public InvoiceItemBuilder withLinkedItem(Promise<InvoiceItem> linkedItem) {
         this.linkedItem = linkedItem;
         return this;
     }
 
-    public InvoiceItemBuilder thenSaveTo(final Promise<InvoiceItem> itemHolder) {
+    public InvoiceItemBuilder thenSaveTo(Promise<InvoiceItem> itemHolder) {
         builtItemHolder = itemHolder;
         return this;
     }

@@ -23,28 +23,39 @@ import java.util.List;
 
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.api.InvoiceItem;
 
 @SuppressWarnings("javadoc")
 public class InvoiceBuilder implements Builder<Invoice> {
     Account account;
     List<InvoiceItemBuilder> itemsBuilders = newArrayList();
 
+    public InvoiceBuilder() {
+        super();
+    }
+
+    public InvoiceBuilder(Account account) {
+        super();
+        this.account = account;
+    }
+
     @Override
     public Invoice build() {
         Invoice invoice = buildInvoice(account);
+        List<InvoiceItem> items = invoice.getInvoiceItems();
         for (InvoiceItemBuilder itemBuilder : itemsBuilders) {
             itemBuilder.withInvoice(invoice);
-            invoice.getInvoiceItems().add(itemBuilder.build());
+            items.add(itemBuilder.build());
         }
         return invoice;
     }
 
-    public InvoiceBuilder withAccount(final Account account) {
+    public InvoiceBuilder withAccount(Account account) {
         this.account = account;
         return this;
     }
 
-    public InvoiceBuilder withItem(final InvoiceItemBuilder itemBuilder) {
+    public InvoiceBuilder withItem(InvoiceItemBuilder itemBuilder) {
         itemsBuilders.add(itemBuilder);
         return this;
     }

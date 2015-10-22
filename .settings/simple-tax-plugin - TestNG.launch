@@ -20,19 +20,19 @@
 <mapEntry key="org.killbill.billing.test.helpers.InvoiceItemBuilder" value=""/>
 <mapEntry key="org.killbill.billing.test.helpers.Promise" value=""/>
 </mapAttribute>
-<listAttribute key="org.testng.eclipse.CLASS_TEST_LIST">
-<listEntry value="org.killbill.billing.plugin.simpletax.TestSimpleTaxInvoicePluginApi"/>
-</listAttribute>
+<listAttribute key="org.testng.eclipse.CLASS_TEST_LIST"/>
 <booleanAttribute key="org.testng.eclipse.DEBUG" value="false"/>
 <listAttribute key="org.testng.eclipse.GROUP_LIST"/>
 <listAttribute key="org.testng.eclipse.GROUP_LIST_CLASS"/>
 <stringAttribute key="org.testng.eclipse.LOG_LEVEL" value="2"/>
 <listAttribute key="org.testng.eclipse.METHOD_TEST_LIST"/>
-<listAttribute key="org.testng.eclipse.PACKAGE_TEST_LIST"/>
+<listAttribute key="org.testng.eclipse.PACKAGE_TEST_LIST">
+<listEntry value="org.killbill.billing.plugin.simpletax"/>
+</listAttribute>
 <mapAttribute key="org.testng.eclipse.PARAMETERS"/>
 <booleanAttribute key="org.testng.eclipse.PREFIX_VM_ARGS_FROM_POM" value="true"/>
 <stringAttribute key="org.testng.eclipse.PRE_DEFINED_LISTENERS" value=""/>
 <stringAttribute key="org.testng.eclipse.PROTOCOL" value="object"/>
-<intAttribute key="org.testng.eclipse.TYPE" value="1"/>
+<intAttribute key="org.testng.eclipse.TYPE" value="5"/>
 <booleanAttribute key="org.testng.eclipse.VERBOSE" value="false"/>
 </launchConfiguration>

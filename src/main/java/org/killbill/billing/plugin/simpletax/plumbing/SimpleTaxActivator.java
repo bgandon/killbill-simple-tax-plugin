@@ -22,8 +22,8 @@ import java.util.Hashtable;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
-import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;
@@ -40,7 +40,6 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
 
     /** The name for this plugin. */
     public static final String PLUGIN_NAME = "killbill-simple-tax";
-
 
     private SimpleTaxConfigurationHandler configHandler;
 
@@ -70,7 +69,7 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
      * @see org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase#start(org.osgi.framework.BundleContext)
      */
     @Override
-    public void start(final BundleContext context) throws Exception {
+    public void start(BundleContext context) throws Exception {
         super.start(context);
 
         createDefaultConfig();
@@ -101,7 +100,7 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         return new SimpleTaxPlugin(configHandler, killbillAPI, getConfigService(), logService, clock);
     }
 
-    private void registerInvoicePluginApi(final BundleContext context, final InvoicePluginApi plugin) {
+    private void registerInvoicePluginApi(BundleContext context, InvoicePluginApi plugin) {
         Hashtable<String, String> props = new Hashtable<String, String>();
         props.put(PLUGIN_NAME_PROP, PLUGIN_NAME);
         registrar.registerService(context, InvoicePluginApi.class, plugin, props);

@@ -21,6 +21,7 @@ import static java.math.BigDecimal.ZERO;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
@@ -40,14 +41,17 @@ public class InvoiceHelpers {
      * consideration.
      *
      * @param item
-     *            an invoice item
+     *            An invoice item. Must not be {@code null}.
      * @param allAdjustments
-     *            all adjustments items of all invoices (for the same account as
-     *            the invoice item above)
-     * @return the adjusted amount
+     *            All the adjustments items of all invoices (for the same
+     *            account as the invoice item above). Must not be {@code null}.
+     * @return the adjusted amount, never {@code null}.
+     * @throws NullPointerException
+     *             when {@code item} or {@code allAdjustments} are {@code null}.
      */
-    public static BigDecimal amountWithAdjustments(final InvoiceItem item,
-            final Multimap<UUID, InvoiceItem> allAdjustments) {
+    @Nonnull
+    public static BigDecimal amountWithAdjustments(@Nonnull InvoiceItem item,
+            @Nonnull Multimap<UUID, InvoiceItem> allAdjustments) {
         Iterable<InvoiceItem> adjustments = allAdjustments.get(item.getId());
         BigDecimal amount = sumItems(adjustments);
         if (item.getAmount() != null) {
@@ -63,7 +67,7 @@ public class InvoiceHelpers {
      *            the amounts to sum, non of which can be {@code null}.
      * @return the sum of amounts, never {@code null}.
      */
-    public static BigDecimal sumAmounts(@Nullable final Iterable<BigDecimal> amounts) {
+    public static BigDecimal sumAmounts(@Nullable Iterable<BigDecimal> amounts) {
         BigDecimal sum = ZERO;
         for (BigDecimal amount : amounts) {
             sum = sum.add(amount);
@@ -81,12 +85,16 @@ public class InvoiceHelpers {
      * The resulting sum does not take any adjustment into consideration.
      *
      * @param invoiceItems
-     *            the invoice items to sum, or {@code null}. The collection
+     *            The invoice items to sum, or {@code null}. The collection
      *            shall not contain any {@code null} items, but those can
      *            possibly have {@code null} amounts.
-     * @return the sum of all invoice items amount, never {@code null}
+     * @return the sum of all invoice items amount, never {@code null}.
+     * @throws NullPointerException
+     *             When any {@link InvoiceItem} in {@code invoiceItems} is
+     *             {@code null}.
      */
-    public static BigDecimal sumItems(@Nullable final Iterable<InvoiceItem> invoiceItems) {
+    @Nonnull
+    public static BigDecimal sumItems(@Nullable Iterable<InvoiceItem> invoiceItems) {
         if (invoiceItems == null) {
             return ZERO;
         }

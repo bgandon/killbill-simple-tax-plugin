@@ -16,12 +16,15 @@
  */
 package org.killbill.billing.plugin.simpletax.plumbing;
 
+import java.util.Map;
 import java.util.Properties;
 
 import org.killbill.billing.plugin.api.notification.PluginTenantConfigurableConfigurationHandler;
 import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+
+import com.google.common.collect.Maps;
 
 /**
  * A per-tenant configuration handler for the simple-tax plugin.
@@ -30,24 +33,27 @@ import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
  */
 public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfigurationHandler<SimpleTaxConfig> {
 
+    private OSGIKillbillLogService logService;
+
     /**
      * Constructs a new configuration handler.
      *
      * @param pluginName
      *            The plugin name to use when accessing per-tenant
      *            configuration.
-     * @param osgiKillbillAPI
+     * @param services
      *            The Kill Bill meta-API.
-     * @param osgiKillbillLogService
+     * @param logService
      *            The service to use when logging events.
      */
-    public SimpleTaxConfigurationHandler(final String pluginName, final OSGIKillbillAPI osgiKillbillAPI,
-            final OSGIKillbillLogService osgiKillbillLogService) {
-        super(pluginName, osgiKillbillAPI, osgiKillbillLogService);
+    public SimpleTaxConfigurationHandler(String pluginName, OSGIKillbillAPI services, OSGIKillbillLogService logService) {
+        super(pluginName, services, logService);
+        this.logService = logService;
     }
 
     @Override
-    protected SimpleTaxConfig createConfigurable(final Properties pluginConfig) {
-        return new SimpleTaxConfig(pluginConfig);
+    protected SimpleTaxConfig createConfigurable(Properties pluginConfig) {
+        Map<String, String> props = Maps.fromProperties(pluginConfig);
+        return new SimpleTaxConfig(props, logService);
     }
 }

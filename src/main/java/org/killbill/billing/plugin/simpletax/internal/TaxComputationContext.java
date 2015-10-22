@@ -17,10 +17,13 @@
 package org.killbill.billing.plugin.simpletax.internal;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 import org.killbill.billing.account.api.Account;
+import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.TaxCodes;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
@@ -28,6 +31,22 @@ import com.google.common.collect.Ordering;
 /**
  * An immutable holder class that is to contain pre-computed data that are
  * useful when creating new tax items and adjusting existing ones.
+ * <p>
+ * These pre-computed data are meant to be immutable. They are in most cases.
+ * <p>
+ * The reason for this “context” class, is for minimize the number of arguments
+ * of {@link org.killbill.billing.plugin.simpletax.SimpleTaxPlugin} methods.
+ * Inherently to the design of Kill Bill OSGi module, many helper methods and
+ * services are provided by the “api” superclass
+ * {@link org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi}.
+ * <p>
+ * This leads plugin writers to keep much of the code in that “api” class, and
+ * pass way too many arguments to various computation methods in that class.
+ * <p>
+ * As a workaround to this issue, we choose to gather here all the pre-computed
+ * immutable data that are needed by our methods in our
+ * {@link org.killbill.billing.plugin.simpletax.SimpleTaxPlugin} and only pass
+ * such a “context” object as argument.
  *
  * @author Benjamin Gandon
  */
@@ -37,9 +56,13 @@ public class TaxComputationContext {
 
     private Account account;
 
+    private Set<Invoice> allInvoices;
+
     private Function<InvoiceItem, BigDecimal> toAdjustedAmount;
 
     private Ordering<InvoiceItem> byAdjustedAmount;
+
+    private TaxCodes taxCodes;
 
     /**
      * Constructs an immutable holder for pre-comuted data.
@@ -53,14 +76,19 @@ public class TaxComputationContext {
      * @param byAdjustedAmount
      *            An ordering that orders {@link InvoiceItem}s by adjusted
      *            amount.
+     * @param taxCodes
+     *            The tax codes resolver to use.
      */
-    public TaxComputationContext(final SimpleTaxConfig config, final Account account,
-            final Function<InvoiceItem, BigDecimal> toAdjustedAmount, final Ordering<InvoiceItem> byAdjustedAmount) {
+    public TaxComputationContext(SimpleTaxConfig config, Account account, Set<Invoice> allInvoices,
+            Function<InvoiceItem, BigDecimal> toAdjustedAmount, Ordering<InvoiceItem> byAdjustedAmount,
+            TaxCodes taxCodes) {
         super();
         this.config = config;
         this.account = account;
+        this.allInvoices = allInvoices;
         this.toAdjustedAmount = toAdjustedAmount;
         this.byAdjustedAmount = byAdjustedAmount;
+        this.taxCodes = taxCodes;
     }
 
     /**
@@ -77,6 +105,10 @@ public class TaxComputationContext {
         return account;
     }
 
+    public Set<Invoice> getAllInvoices() {
+        return allInvoices;
+    }
+
     /**
      * @return A function that computes adjusted amounts.
      */
@@ -89,5 +121,12 @@ public class TaxComputationContext {
      */
     public Ordering<InvoiceItem> byAdjustedAmount() {
         return byAdjustedAmount;
+    }
+
+    /**
+     * @return The applicable resolver for tax codes.
+     */
+    public TaxCodes getTaxCodes() {
+        return taxCodes;
     }
 }

@@ -4,7 +4,7 @@
 <stringAttribute key="M2_GOALS" value="clean package install"/>
 <booleanAttribute key="M2_NON_RECURSIVE" value="false"/>
 <booleanAttribute key="M2_OFFLINE" value="false"/>
-<stringAttribute key="M2_PROFILES" value=""/>
+<stringAttribute key="M2_PROFILES" value="jdk16"/>
 <listAttribute key="M2_PROPERTIES"/>
 <stringAttribute key="M2_RUNTIME" value="EMBEDDED"/>
 <booleanAttribute key="M2_SKIP_TESTS" value="false"/>
@@ -15,5 +15,6 @@
 <stringAttribute key="bad_container_name" value="/simple-tax-pl/.settings"/>
 <stringAttribute key="org.eclipse.debug.core.ATTR_REFRESH_SCOPE" value="${working_set:&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;resources&gt;&#10;&lt;item path=&quot;/simple-tax-plugin/dependency-reduced-pom.xml&quot; type=&quot;1&quot;/&gt;&#10;&lt;item path=&quot;/simple-tax-plugin/target&quot; type=&quot;2&quot;/&gt;&#10;&lt;/resources&gt;}"/>
 <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${project_loc:/simple-tax-plugin}"/>
 </launchConfiguration>

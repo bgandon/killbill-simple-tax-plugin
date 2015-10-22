@@ -37,7 +37,7 @@ public class Promise<T> {
      * @throws IllegalStateException
      *             When the promise has already been resolved.
      */
-    public synchronized void resolve(final T value) {
+    public synchronized void resolve(T value) {
         checkState(!isSet, "already resolved promise");
         this.value = value;
         isSet = true;
@@ -45,7 +45,7 @@ public class Promise<T> {
 
     /**
      * Obtain the promised instance.
-     * 
+     *
      * @return The promised object.
      * @throws IllegalStateException
      *             When the promise has not already been resolved.

@@ -1,0 +1,153 @@
+/*
+ * Copyright 2015 Benjamin Gandon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+package org.killbill.billing.plugin.simpletax;
+
+import static org.apache.commons.collections4.map.LazyMap.lazyMap;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.collections4.Transformer;
+import org.killbill.billing.catalog.api.CatalogApiException;
+import org.killbill.billing.catalog.api.Plan;
+import org.killbill.billing.catalog.api.Product;
+import org.killbill.billing.catalog.api.StaticCatalog;
+import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.util.customfield.CustomField;
+
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
+
+/**
+ * @author Benjamin Gandon
+ */
+public class TaxCodes {
+
+    /**
+     * The name of a custom field on invoice items, that can specify any
+     * relevant tax code to apply.
+     */
+    public static final String TAX_CODES_FIELD_NAME = "taxCodes";
+
+    private LazyValue<StaticCatalog, CatalogApiException> catalog;
+    private SimpleTaxConfig cfg;
+    private SetMultimap<UUID, CustomField> taxFieldsOfInvoices;
+
+    /**
+     * Creates a new lazy value for the collection of tax codes.
+     *
+     * @param cfg
+     *            The plugin configuration.
+     * @param api
+     *            The Kill Bill meta-API.
+     * @param context
+     *            The call context.
+     */
+    public TaxCodes(LazyValue<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
+            SetMultimap<UUID, CustomField> taxFieldsOfInvoices) {
+        super();
+        this.catalog = catalog;
+        this.cfg = cfg;
+        this.taxFieldsOfInvoices = taxFieldsOfInvoices;
+    }
+
+    /**
+     * Final resolution is not done here because it represents custom logic that
+     * is regulation-dependent.
+     *
+     * @param invoice
+     *            the invoice the items of which need to be taxed.
+     * @return The applicable tax codes, grouped by the identifiers of their
+     *         related invoice items. Never {@code null}, and guaranteed not
+     *         having any {@code null} values.
+     */
+    @Nonnull
+    public SetMultimap<UUID, TaxCode> resolveTaxCodesFromConfig(Invoice invoice) {
+        ImmutableSetMultimap.Builder<UUID, TaxCode> taxCodesOfInvoiceItems = ImmutableSetMultimap.builder();
+
+        Map<String, Product> productOfPlanName = lazyMap(new HashMap<String, Product>(),
+                new Transformer<String, Product>() {
+                    @Override
+                    public Product transform(String planName) {
+                        try {
+                            Plan plan = catalog.get().findCurrentPlan(planName);
+                            return plan.getProduct();
+                        } catch (CatalogApiException notFound) {
+                            return null;
+                        }
+                    }
+                });
+
+        for (InvoiceItem invoiceItem : invoice.getInvoiceItems()) {
+            String planName = invoiceItem.getPlanName();
+            if (planName == null) {
+                continue;
+            }
+
+            Product product = productOfPlanName.get(planName);
+            if (product == null) {
+                continue;
+            }
+
+            Set<TaxCode> taxCodes = cfg.getConfiguredTaxCodes(product.getName());
+            if (taxCodes.isEmpty()) {
+                continue;
+            }
+            taxCodesOfInvoiceItems.putAll(invoiceItem.getId(), taxCodes);
+        }
+        return taxCodesOfInvoiceItems.build();
+    }
+
+    /**
+     * Find tax codes of invoices items, looking for a custom field named
+     * {@value #TAX_CODES_FIELD_NAME} on the items.
+     *
+     * @param invoice
+     *            An invoice in which existing tax codes are to be found.
+     * @return The existing tax codes, grouped by the identifiers of their
+     *         related invoice items. Never {@code null}, and guaranteed not
+     *         having any {@code null} values.
+     */
+    @Nonnull
+    public SetMultimap<UUID, TaxCode> findExistingTaxCodes(Invoice invoice) {
+        Set<CustomField> taxFields = taxFieldsOfInvoices.get(invoice.getId());
+        if (taxFields == null) {
+            return ImmutableSetMultimap.of();
+        }
+
+        ImmutableSetMultimap.Builder<UUID, TaxCode> taxCodesOfInvoiceItems = ImmutableSetMultimap.builder();
+        for (CustomField taxField : taxFields) {
+            if (!TAX_CODES_FIELD_NAME.equals(taxField.getFieldName())) {
+                continue;
+            }
+            String taxCodesCSV = taxField.getFieldValue();
+            if (taxCodesCSV == null) {
+                continue;
+            }
+            UUID invoiceItemId = taxField.getObjectId();
+            Set<TaxCode> taxCodes = cfg.findTaxCodes(taxCodesCSV, "from custom field '" + TAX_CODES_FIELD_NAME
+                    + "' of invoice item [" + invoiceItemId + "]");
+            taxCodesOfInvoiceItems.putAll(invoiceItemId, taxCodes);
+        }
+        return taxCodesOfInvoiceItems.build();
+    }
+}

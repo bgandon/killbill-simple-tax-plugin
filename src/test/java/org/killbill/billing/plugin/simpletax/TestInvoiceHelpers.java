@@ -16,7 +16,64 @@
  */
 package org.killbill.billing.plugin.simpletax;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
+import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.sumItems;
+import static org.testng.Assert.assertEquals;
+
+import java.math.BigDecimal;
+
+import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.test.helpers.InvoiceItemBuilder;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+/**
+ * Tests for {@link InvoiceHelpers}.
+ *
+ * @author Benjamin Gandon
+ */
 @SuppressWarnings("javadoc")
 public class TestInvoiceHelpers {
 
+    private static final BigDecimal ELEVEN = valueOf(11L);
+
+    private InvoiceItem itemA, itemB, itemC;
+
+    @BeforeClass
+    public void init() {
+        itemA = new InvoiceItemBuilder()//
+                .withAmount(TEN)//
+                .build();
+        itemB = new InvoiceItemBuilder()//
+                .withAmount(null)//
+                .build();
+        itemC = new InvoiceItemBuilder()//
+                .withAmount(ONE)//
+                .build();
+    }
+
+    @Test(groups = "fast")
+    public void sumItemsShouldReturnZeroForNullInput() {
+        // Expect
+        assertEquals(sumItems(null), ZERO);
+    }
+
+    @Test(groups = "fast", expectedExceptions = NullPointerException.class)
+    public void sumItemsShouldThrowNPEOnNullItem() {
+        // Expect NPE
+        sumItems(newArrayList(itemA, null, itemB));
+    }
+
+    @Test(groups = "fast")
+    public void sumItemsShouldSum() {
+        // Given
+        Iterable<InvoiceItem> items = newArrayList(itemA, itemB, itemC);
+
+        // Expect
+        assertEquals(sumItems(items), ELEVEN);
+    }
 }

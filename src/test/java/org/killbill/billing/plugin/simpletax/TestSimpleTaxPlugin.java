@@ -16,10 +16,14 @@
  */
 package org.killbill.billing.plugin.simpletax;
 
+import static com.google.common.collect.Collections2.filter;
+import static com.google.common.collect.Lists.newArrayList;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
+import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.catalog.api.Currency.EUR;
 import static org.killbill.billing.invoice.api.InvoiceItemType.EXTERNAL_CHARGE;
 import static org.killbill.billing.invoice.api.InvoiceItemType.ITEM_ADJ;
@@ -28,18 +32,17 @@ import static org.killbill.billing.invoice.api.InvoiceItemType.TAX;
 import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildLogService;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
-import static org.killbill.billing.plugin.TestUtils.buildPayment;
+import static org.killbill.billing.plugin.simpletax.TaxCodes.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.testng.Assert.assertEquals;
-import static org.testng.collections.Lists.newArrayList;
+import static org.testng.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
@@ -47,15 +50,18 @@ import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
+import org.killbill.billing.payment.api.Payment;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.PluginCallContext;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
 import org.killbill.billing.tenant.api.TenantUserApi;
+import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.test.helpers.InvoiceBuilder;
 import org.killbill.billing.test.helpers.InvoiceItemBuilder;
 import org.killbill.billing.test.helpers.Promise;
+import org.killbill.billing.util.api.CustomFieldUserApi;
 import org.killbill.billing.util.callcontext.CallContext;
-import org.killbill.billing.util.callcontext.TenantContext;
+import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
@@ -63,10 +69,12 @@ import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxPlugin {
@@ -83,16 +91,23 @@ public class TestSimpleTaxPlugin {
     private SimpleTaxPlugin plugin;
 
     @Mock
-    InvoiceUserApi invoiceUserApi;
+    private InvoiceUserApi invoiceUserApi;
     @Mock
-    TenantUserApi tenantUserApi;
+    private TenantUserApi tenantUserApi;
+    @Mock
+    private CustomFieldUserApi customFieldUserApi;
 
     private Account account;
     private Invoice invoiceA, invoiceB, invoiceC, invoiceD, invoiceE;
 
     private Promise<InvoiceItem> tax1 = new Promise<InvoiceItem>();
-    private Promise<InvoiceItem> taxableB = new Promise<InvoiceItem>(), taxableC = new Promise<InvoiceItem>(),
-            taxableD = new Promise<InvoiceItem>(), taxableE = new Promise<InvoiceItem>();
+    private Promise<InvoiceItem> taxableA = new Promise<InvoiceItem>(),//
+            taxableB = new Promise<InvoiceItem>(),//
+            taxableC = new Promise<InvoiceItem>(),//
+            taxableD = new Promise<InvoiceItem>(),//
+            taxableE = new Promise<InvoiceItem>();
+
+    private List<CustomField> taxFields = newArrayList();
 
     @BeforeClass(groups = "fast")
     public void init() throws Exception {
@@ -100,23 +115,36 @@ public class TestSimpleTaxPlugin {
 
         account = buildAccount(EUR, "FR");
 
-        OSGIKillbillAPI kbAPI = buildOSGIKillbillAPI(account,
-                buildPayment(account.getId(), account.getPaymentMethodId(), account.getCurrency()), null);
-        when(kbAPI.getInvoiceUserApi()).thenReturn(invoiceUserApi);
-        when(kbAPI.getTenantUserApi()).thenReturn(tenantUserApi);
+        OSGIKillbillAPI services = buildOSGIKillbillAPI(account, mock(Payment.class), null);
+        when(services.getCustomFieldUserApi()).thenReturn(customFieldUserApi);
+        when(services.getInvoiceUserApi()).thenReturn(invoiceUserApi);
+        when(services.getTenantUserApi()).thenReturn(tenantUserApi);
 
         OSGIKillbillLogService logService = buildLogService();
-        SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, kbAPI, logService);
-        cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(new Properties()));
+        SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, services, logService);
+        ImmutableMap.Builder<String, String> cfg = ImmutableMap.builder();
+        String pfx = SimpleTaxConfig.PROPERTY_PREFIX;
+        cfg.put(pfx + "taxResolver", InvoiceItemEndDateBasedResolver.class.getName());
+        String taxCode = "VAT_20_0%";
+        cfg.put(pfx + "taxCodes." + taxCode + ".taxItem.description", "Test VAT");
+        cfg.put(pfx + "taxCodes." + taxCode + ".rate", "0.20");
+        // cfg.put(pfx + "taxCodes."+taxCode+".startingOn", "2015-10-10");
+        // cfg.put(pfx + "taxCodes."+taxCode+".startingOn", "2015-10-10");
+        cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(cfg.build(), logService));
 
         OSGIConfigPropertiesService cfgService = mock(OSGIConfigPropertiesService.class);
         Clock clock = new DefaultClock();
-        plugin = new SimpleTaxPlugin(cfgHandler, kbAPI, cfgService, logService, clock);
+        plugin = new SimpleTaxPlugin(cfgHandler, services, cfgService, logService, clock);
 
-        Promise<InvoiceItem> taxableA = new Promise<InvoiceItem>();
+        // when(customFieldUserApi.getCustomFieldsForAccountType(account.getId(),
+        // INVOICE_ITEM, context)).thenReturn(
+        // taxFields);
+        CustomFieldBuilder twentyPerCentVatFieldBuilder = new CustomFieldBuilder()//
+                .withObjectType(INVOICE_ITEM)//
+                .withFieldName(TAX_CODES_FIELD_NAME)//
+                .withFieldValue(taxCode);
 
-        invoiceA = new InvoiceBuilder()//
-                .withAccount(account)//
+        invoiceA = new InvoiceBuilder(account)//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(EXTERNAL_CHARGE).withAmount(TEN).thenSaveTo(taxableA))//
                 .withItem(new InvoiceItemBuilder()//
@@ -124,55 +152,77 @@ public class TestSimpleTaxPlugin {
                 .withItem(new InvoiceItemBuilder()//
                         .withType(ITEM_ADJ).withLinkedItem(taxableA).withAmount(ONE.negate()))//
                 .build();
+        taxFields.add(twentyPerCentVatFieldBuilder.withObjectId(taxableA.get().getId()).build());
 
-        invoiceB = new InvoiceBuilder()//
-                .withAccount(account)//
+        invoiceB = new InvoiceBuilder(account)//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(RECURRING).withAmount(TEN).thenSaveTo(taxableB))//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(ITEM_ADJ).withLinkedItem(taxableA).withAmount(ONE.negate()))//
                 .build();
+        taxFields.add(twentyPerCentVatFieldBuilder.withObjectId(taxableB.get().getId()).build());
 
-        invoiceC = new InvoiceBuilder()//
-                .withAccount(account)//
+        invoiceC = new InvoiceBuilder(account)//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(EXTERNAL_CHARGE).withAmount(EIGHT).thenSaveTo(taxableC))//
                 .build();
+        taxFields.add(twentyPerCentVatFieldBuilder.withObjectId(taxableC.get().getId()).build());
 
-        invoiceD = new InvoiceBuilder()//
-                .withAccount(account)//
+        invoiceD = new InvoiceBuilder(account)//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(EXTERNAL_CHARGE).withAmount(EIGHT).thenSaveTo(taxableD))//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(TAX).withLinkedItem(taxableD).withAmount(valueOf(1.6)))//
                 .build();
+        taxFields.add(twentyPerCentVatFieldBuilder.withObjectId(taxableD.get().getId()).build());
 
-        invoiceE = new InvoiceBuilder()//
-                .withAccount(account)//
+        invoiceE = new InvoiceBuilder(account)//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(RECURRING).withAmount(SEVEN).thenSaveTo(taxableE))//
                 .withItem(new InvoiceItemBuilder()//
                         .withType(ITEM_ADJ).withLinkedItem(taxableE).withAmount(TWO))//
                 .build();
+        taxFields.add(twentyPerCentVatFieldBuilder.withObjectId(taxableE.get().getId()).build());
     }
 
-    @BeforeMethod(groups = "fast")
-    public void setUp() throws Exception {
+    private void withInvoices(Invoice... invoices) {
+        when(invoiceUserApi.getInvoicesByAccount(account.getId(), context))//
+                .thenReturn(asList(invoices));
+
+        List<CustomField> fields = fieldsRelatedTo(invoices);
+
+        when(customFieldUserApi.getCustomFieldsForAccountType(account.getId(), INVOICE_ITEM, context))//
+                .thenReturn(fields);
+    }
+
+    private List<CustomField> fieldsRelatedTo(Invoice... invoices) {
+        ImmutableSet.Builder<UUID> knownItemIdentifiers = ImmutableSet.builder();
+        for (Invoice invoice : invoices) {
+            for (InvoiceItem item : invoice.getInvoiceItems()) {
+                knownItemIdentifiers.add(item.getId());
+            }
+        }
+        final Set<UUID> knownItems = knownItemIdentifiers.build();
+        List<CustomField> fieldsForInvoices = newArrayList(filter(taxFields, new Predicate<CustomField>() {
+            @Override
+            public boolean apply(CustomField field) {
+                return knownItems.contains(field.getObjectId());
+            }
+        }));
+        return fieldsForInvoices;
     }
 
     @Test(groups = "fast")
     public void shouldAdjustIncorrectOldTaxItemAndTaxNewItem() throws Exception {
         // Given
         Invoice newInvoice = invoiceB;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoiceA, newInvoice));
+        withInvoices(invoiceA, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
-        assertEquals(items.size(), 2);
-
+        assertTrue(items.size() >= 1);
         InvoiceItem item1 = items.get(0);
         assertEquals(item1.getInvoiceItemType(), ITEM_ADJ);
         assertEquals(item1.getLinkedItemId(), tax1.get().getId());
@@ -180,23 +230,25 @@ public class TestSimpleTaxPlugin {
         assertEquals(item1.getInvoiceId(), invoiceA.getId());
         assertEquals(item1.getStartDate(), invoiceA.getInvoiceDate());
 
+        assertTrue(items.size() >= 2);
         InvoiceItem item2 = items.get(1);
         assertEquals(item2.getInvoiceItemType(), TAX);
         assertEquals(item2.getLinkedItemId(), taxableB.get().getId());
         assertEquals(item2.getAmount(), TWO);
         assertEquals(item2.getInvoiceId(), invoiceB.getId());
         assertEquals(item2.getStartDate(), invoiceB.getInvoiceDate());
+
+        assertEquals(items.size(), 2);
     }
 
     @Test(groups = "fast")
     public void shouldNotCreateNewTaxItemsInNewInvoiceProperlyTaxed() {
         // Given
         Invoice newInvoice = invoiceD;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(newInvoice));
+        withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -206,11 +258,10 @@ public class TestSimpleTaxPlugin {
     public void shouldNotCreateNewTaxItemsInHistoricalInvoices() {
         // Given
         Invoice newInvoice = invoiceD;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoiceC, newInvoice));
+        withInvoices(invoiceC, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -220,11 +271,10 @@ public class TestSimpleTaxPlugin {
     public void shouldNotCreateNewTaxItemsInHistoricalInvoicesWithAdjustments() {
         // Given
         Invoice newInvoice = invoiceD;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoiceE, newInvoice));
+        withInvoices(invoiceE, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -234,11 +284,10 @@ public class TestSimpleTaxPlugin {
     public void shouldCreateMissingTaxItemInNewlyCreatedInvoice() {
         // Given
         Invoice newInvoice = invoiceC;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoiceD, newInvoice));
+        withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -255,11 +304,10 @@ public class TestSimpleTaxPlugin {
     public void shouldCreateMissingTaxItemInNewlyCreatedInvoiceWithAdjustment() {
         // Given
         Invoice newInvoice = invoiceE;
-        when(invoiceUserApi.getInvoicesByAccount(any(UUID.class), any(TenantContext.class)))//
-                .thenReturn(newArrayList(invoiceD, newInvoice));
+        withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
