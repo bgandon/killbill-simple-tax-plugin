@@ -22,8 +22,8 @@ import java.util.Hashtable;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
-import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;

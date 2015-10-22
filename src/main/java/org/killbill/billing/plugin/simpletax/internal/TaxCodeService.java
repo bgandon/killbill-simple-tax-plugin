@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.internal;
 
 import static org.apache.commons.collections4.map.LazyMap.lazyMap;
 
@@ -32,6 +32,8 @@ import org.killbill.billing.catalog.api.Product;
 import org.killbill.billing.catalog.api.StaticCatalog;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.util.LazyValue;
 import org.killbill.billing.util.customfield.CustomField;
 
 import com.google.common.collect.ImmutableSetMultimap;
@@ -40,7 +42,7 @@ import com.google.common.collect.SetMultimap;
 /**
  * @author Benjamin Gandon
  */
-public class TaxCodes {
+public class TaxCodeService {
 
     /**
      * The name of a custom field on invoice items, that can specify any
@@ -62,7 +64,7 @@ public class TaxCodes {
      * @param context
      *            The call context.
      */
-    public TaxCodes(LazyValue<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
+    public TaxCodeService(LazyValue<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
             SetMultimap<UUID, CustomField> taxFieldsOfInvoices) {
         super();
         this.catalog = catalog;

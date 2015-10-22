@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.killbill.billing.plugin.api.notification.PluginTenantConfigurableConfigurationHandler;
-import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 

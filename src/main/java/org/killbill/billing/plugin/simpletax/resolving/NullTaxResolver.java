@@ -14,12 +14,13 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.resolving;
 
 import java.util.Set;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
-import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 
 /**
  * A default fail-safe tax resolver that disables taxation altogether.

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.config;
 
 import static com.google.common.collect.Sets.newLinkedHashSet;
 import static java.lang.Thread.currentThread;
@@ -22,13 +22,13 @@ import static org.apache.commons.lang3.StringUtils.INDEX_NOT_FOUND;
 import static org.apache.commons.lang3.StringUtils.indexOf;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.startsWith;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.bigDecimal;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.integer;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.localDate;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.resolverConstructor;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.splitTaxCodes;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.string;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.timeZone;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.resolverConstructor;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 import static org.osgi.service.log.LogService.LOG_WARNING;
 
@@ -43,7 +43,10 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
-import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
+import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.google.common.collect.ImmutableMap;

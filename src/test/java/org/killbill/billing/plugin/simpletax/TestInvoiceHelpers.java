@@ -21,12 +21,13 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
 import static java.math.BigDecimal.valueOf;
-import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.sumItems;
+import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.sumItems;
 import static org.testng.Assert.assertEquals;
 
 import java.math.BigDecimal;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.plugin.simpletax.util.InvoiceHelpers;
 import org.killbill.billing.test.helpers.InvoiceItemBuilder;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

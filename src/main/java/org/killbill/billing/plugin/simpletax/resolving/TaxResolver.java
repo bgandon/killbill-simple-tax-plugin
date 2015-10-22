@@ -14,20 +14,21 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.resolving;
 
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 
 /**
  * Tax resolvers are meant to apply regulation specific rules when determining
  * which tax code actually applies, in a set of potential candidates.
  * <p>
  * Constructors of implementing classes must accept one single argument of type
- * {@link org.killbill.billing.plugin.simpletax.internal.TaxComputationContext}.
+ * {@link org.killbill.billing.plugin.simpletax.TaxComputationContext}.
  *
  * @author Benjamin Gandon
  */

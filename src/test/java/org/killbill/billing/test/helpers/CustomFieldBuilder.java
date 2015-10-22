@@ -3,7 +3,7 @@ package org.killbill.billing.test.helpers;
 import java.util.UUID;
 
 import org.killbill.billing.ObjectType;
-import org.killbill.billing.plugin.simpletax.ImmutableCustomField;
+import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
 import org.killbill.billing.util.customfield.CustomField;
 
 public class CustomFieldBuilder implements Builder<CustomField> {

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax.internal;
+package org.killbill.billing.plugin.simpletax;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -22,8 +22,8 @@ import java.util.Set;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
-import org.killbill.billing.plugin.simpletax.SimpleTaxConfig;
-import org.killbill.billing.plugin.simpletax.TaxCodes;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
@@ -62,7 +62,7 @@ public class TaxComputationContext {
 
     private Ordering<InvoiceItem> byAdjustedAmount;
 
-    private TaxCodes taxCodes;
+    private TaxCodeService taxCodeService;
 
     /**
      * Constructs an immutable holder for pre-comuted data.
@@ -76,19 +76,19 @@ public class TaxComputationContext {
      * @param byAdjustedAmount
      *            An ordering that orders {@link InvoiceItem}s by adjusted
      *            amount.
-     * @param taxCodes
-     *            The tax codes resolver to use.
+     * @param taxCodeService
+     *            The tax code service to use.
      */
     public TaxComputationContext(SimpleTaxConfig config, Account account, Set<Invoice> allInvoices,
             Function<InvoiceItem, BigDecimal> toAdjustedAmount, Ordering<InvoiceItem> byAdjustedAmount,
-            TaxCodes taxCodes) {
+            TaxCodeService taxCodeService) {
         super();
         this.config = config;
         this.account = account;
         this.allInvoices = allInvoices;
         this.toAdjustedAmount = toAdjustedAmount;
         this.byAdjustedAmount = byAdjustedAmount;
-        this.taxCodes = taxCodes;
+        this.taxCodeService = taxCodeService;
     }
 
     /**
@@ -126,7 +126,7 @@ public class TaxComputationContext {
     /**
      * @return The applicable resolver for tax codes.
      */
-    public TaxCodes getTaxCodes() {
-        return taxCodes;
+    public TaxCodeService getTaxCodeService() {
+        return taxCodeService;
     }
 }

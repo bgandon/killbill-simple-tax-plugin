@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.config;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.primitives.Ints.tryParse;
@@ -36,7 +36,9 @@ import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
-import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 
 import com.google.common.collect.ImmutableSet;
 

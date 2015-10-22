@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.util;
 
 /**
  * A simple holder for a lazily initialized value.

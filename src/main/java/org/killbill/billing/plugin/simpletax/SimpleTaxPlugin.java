@@ -27,10 +27,10 @@ import static java.math.RoundingMode.HALF_UP;
 import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createAdjustmentItem;
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createTaxItem;
-import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.amountWithAdjustments;
-import static org.killbill.billing.plugin.simpletax.InvoiceHelpers.sumAmounts;
-import static org.killbill.billing.plugin.simpletax.SimpleTaxConfig.DEFAULT_TAX_ITEM_DESC;
-import static org.killbill.billing.plugin.simpletax.TaxCodes.TAX_CODES_FIELD_NAME;
+import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.DEFAULT_TAX_ITEM_DESC;
+import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
+import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.amountWithAdjustments;
+import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.sumAmounts;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 
 import java.lang.reflect.Constructor;
@@ -53,8 +53,14 @@ import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
-import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
+import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
+import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
+import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
+import org.killbill.billing.plugin.simpletax.util.LazyValue;
 import org.killbill.billing.util.api.CustomFieldApiException;
 import org.killbill.billing.util.api.CustomFieldUserApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -328,9 +334,9 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
         Function<InvoiceItem, BigDecimal> toAdjustedAmount = toAdjustedAmount(allInvoices);
         Ordering<InvoiceItem> byAdjustedAmount = natural().onResultOf(toAdjustedAmount);
 
-        TaxCodes taxCodes = taxCodeResolver(account, allInvoices, cfg, context);
+        TaxCodeService taxCodeService = taxCodeService(account, allInvoices, cfg, context);
 
-        return new TaxComputationContext(cfg, account, allInvoices, toAdjustedAmount, byAdjustedAmount, taxCodes);
+        return new TaxComputationContext(cfg, account, allInvoices, toAdjustedAmount, byAdjustedAmount, taxCodeService);
     }
 
     private TaxResolver instanciateTaxResolver(TaxComputationContext taxCtx) {
@@ -400,7 +406,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
         };
     }
 
-    private TaxCodes taxCodeResolver(Account account, Set<Invoice> allInvoices, SimpleTaxConfig cfg,
+    private TaxCodeService taxCodeService(Account account, Set<Invoice> allInvoices, SimpleTaxConfig cfg,
             final TenantContext context) {
         LazyValue<StaticCatalog, CatalogApiException> catalog = new LazyValue<StaticCatalog, CatalogApiException>() {
             @Override
@@ -409,7 +415,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             }
         };
         SetMultimap<UUID, CustomField> taxFieldsOfAllInvoices = taxFieldsOfInvoices(account, allInvoices, context);
-        return new TaxCodes(catalog, cfg, taxFieldsOfAllInvoices);
+        return new TaxCodeService(catalog, cfg, taxFieldsOfAllInvoices);
     }
 
     private SetMultimap<UUID, CustomField> taxFieldsOfInvoices(Account account, Set<Invoice> allInvoices,
@@ -449,7 +455,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
     private Map<UUID, TaxCode> addMissingTaxCodes(Invoice newInvoice, TaxResolver resolver,
             TaxComputationContext taxCtx, CallContext callCtx) {
         // Obtain tax codes from products of invoice items
-        TaxCodes taxCodesService = taxCtx.getTaxCodes();
+        TaxCodeService taxCodesService = taxCtx.getTaxCodeService();
         SetMultimap<UUID, TaxCode> configuredTaxCodesForInvoiceItems = taxCodesService
                 .resolveTaxCodesFromConfig(newInvoice);
 
@@ -486,7 +492,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             } catch (CustomFieldApiException exc) {
                 logService.log(LOG_ERROR,
                         "Cannot add custom field [" + field.getFieldName() + "] with value [" + field.getFieldValue()
-                        + "] to invoice item [" + item.getId() + "] of invoice [" + newInvoice.getId() + "]",
+                                + "] to invoice item [" + item.getId() + "] of invoice [" + newInvoice.getId() + "]",
                         exc);
             }
             newTaxCodes.put(item.getId(), applicableCode);
@@ -516,7 +522,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
         SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(invoice);
 
-        SetMultimap<UUID, TaxCode> existingTaxCodes = ctx.getTaxCodes().findExistingTaxCodes(invoice);
+        SetMultimap<UUID, TaxCode> existingTaxCodes = ctx.getTaxCodeService().findExistingTaxCodes(invoice);
 
         List<InvoiceItem> newItems = new LinkedList<InvoiceItem>();
         for (InvoiceItem item : invoice.getInvoiceItems()) {
@@ -573,7 +579,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
         SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(newInvoice);
 
-        SetMultimap<UUID, TaxCode> existingTaxCodes = ctx.getTaxCodes().findExistingTaxCodes(newInvoice);
+        SetMultimap<UUID, TaxCode> existingTaxCodes = ctx.getTaxCodeService().findExistingTaxCodes(newInvoice);
 
         List<InvoiceItem> newItems = new LinkedList<InvoiceItem>();
         for (InvoiceItem item : newInvoice.getInvoiceItems()) {

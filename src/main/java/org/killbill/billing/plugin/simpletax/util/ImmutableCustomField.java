@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.util;
 
 import static java.util.UUID.randomUUID;
 import static org.joda.time.DateTime.now;

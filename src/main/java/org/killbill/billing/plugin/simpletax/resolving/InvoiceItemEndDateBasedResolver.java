@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  */
-package org.killbill.billing.plugin.simpletax;
+package org.killbill.billing.plugin.simpletax.resolving;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.collect.Iterables.tryFind;
-import static org.killbill.billing.plugin.simpletax.ConvertionHelpers.convertTimeZone;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.convertTimeZone;
 
 import java.util.Set;
 
@@ -26,7 +26,9 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.InvoiceItem;
-import org.killbill.billing.plugin.simpletax.internal.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 
 import com.google.common.base.Predicate;
 
