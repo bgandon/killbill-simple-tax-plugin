@@ -32,6 +32,7 @@ import static org.killbill.billing.invoice.api.InvoiceItemType.TAX;
 import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildLogService;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
+import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 import static org.mockito.Mockito.mock;
@@ -125,13 +126,13 @@ public class TestSimpleTaxPlugin {
         OSGIKillbillLogService logService = buildLogService();
         SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, services, logService);
         ImmutableMap.Builder<String, String> cfg = ImmutableMap.builder();
-        String pfx = SimpleTaxConfig.PROPERTY_PREFIX;
+        String pfx = PROPERTY_PREFIX;
         cfg.put(pfx + "taxResolver", InvoiceItemEndDateBasedResolver.class.getName());
         String taxCode = "VAT_20_0%";
         cfg.put(pfx + "taxCodes." + taxCode + ".taxItem.description", "Test VAT");
         cfg.put(pfx + "taxCodes." + taxCode + ".rate", "0.20");
         // cfg.put(pfx + "taxCodes."+taxCode+".startingOn", "2015-10-10");
-        // cfg.put(pfx + "taxCodes."+taxCode+".startingOn", "2015-10-10");
+        // cfg.put(pfx + "taxCodes."+taxCode+".stoppingOn", "2015-10-10");
         cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(cfg.build(), logService));
 
         OSGIConfigPropertiesService cfgService = mock(OSGIConfigPropertiesService.class);

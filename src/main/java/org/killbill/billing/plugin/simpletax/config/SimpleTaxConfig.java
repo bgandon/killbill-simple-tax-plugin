@@ -55,8 +55,60 @@ import com.google.common.collect.ImmutableSet;
 /**
  * A configuration accessor for the simple-tax plugin.
  * <p>
- * Tax codes cannot contain whitespace ({@code ' '}, {@code '\t'}, {@code '\n'},
- * {@code '\f'} or {@code '\r'}), nor commas {@code ','}, nor dots {@code '.'}.
+ * The common prefix for configuration properties is {@value #PROPERTY_PREFIX}.
+ * <p>
+ * <strong>Mandatory configuration properties</strong> <blockquote>
+ * <dl>
+ * <dt>{@value #TAX_RESOLVER_PROPERTY}</dt>
+ * <dd>The {@link TaxResolver} implementation to use.</dd>
+ * <dt>{@value #TAX_AMOUNT_PRECISION_PROPERTY}</dt>
+ * <dd>The scale to apply when computing amounts of tax items in invoices. This
+ * usually depends on the currency that is used, but here we keep it simple.
+ * It's just a per-tenant scale.</dd>
+ * <dt>{@value #PRODUCT_TAX_CODE_PREFIX} &lt;product-name&gt;</dt>
+ * <dd>A comma-separated (or space-separated) list of tax codes that apply to a
+ * certain products. Several tax codes can be configured for one product because
+ * they can specify different rates for different date ranges. It's up to the
+ * {@link TaxResolver} implementation to choose which one applies to a certain
+ * invoice item whose product matches the {@code product-name} here.</dd>
+ * <dt>{@value #TAX_CODES_PREFIX} &lt;tax-code-name&gt; {@value #RATE_SUFFIX}</dt>
+ * <dd>The rate to apply when applying this tax code. Please not that a 20.0%
+ * rate is actually 0.200 here. The given value is converted as a
+ * {@link BigDecimal}, so any fractional zeroes to the right <em>do</em> make a
+ * difference in the resulting {@linkplain BigDecimal#scale() scale}.</dd>
+ * <dt>{@value #TAX_CODES_PREFIX} &lt;tax-code-name&gt;
+ * {@value #TAX_ITEM_DESCRIPTION_SUFFIX}</dt>
+ * <dd>The description for tax items. Localization of this description is not
+ * possible here, but can be implemented with custom
+ * {@linkplain org.killbill.billing.invoice.api.formatters.InvoiceFormatter
+ * invoice formatters}.</dd>
+ * <dt>{@value #TAX_CODES_PREFIX} &lt;tax-code-name&gt;
+ * {@value #STARTING_ON_SUFFIX}</dt>
+ * <dd>The first day on which the tax code <em>starts</em> being applicable.</dd>
+ * <dt>{@value #TAX_CODES_PREFIX} &lt;tax-code-name&gt;
+ * {@value #STOPPING_ON_SUFFIX}</dt>
+ * <dd>The first day on which this tax code <em>ceases</em> to be applicable.</dd>
+ * </dl>
+ * </blockquote>
+ * <p>
+ * <strong>Optional configuration properties</strong> <blockquote>
+ * <dl>
+ * <dt>{@value #TAXATION_TIME_ZONE_PROPERTY}</dt>
+ * <dd>The time zone to consider when using dates to apply taxes. It is up to
+ * the {@link TaxResolver} implementation to use this property or not.</dd>
+ * </dl>
+ * </blockquote>
+ * <p>
+ * <strong>Notes on tax codes:</strong>
+ * <ol>
+ * <li>Tax codes are uniquely identified by their names.</li>
+ * <li>Tax code names cannot contain whitespace ({@code ' '}, {@code '\t'},
+ * {@code '\n'}, {@code '\f'} or {@code '\r'}), nor commas {@code ','}, nor dots
+ * {@code '.'}.</li>
+ * <li>Tax codes should be immutable, as far as their {@code name}s,
+ * {@code rate}s, and {@code startingOn} dates are concerned. The only “mutable”
+ * property should by their {@code stoppingOn} date.</li>
+ * </ol>
  *
  * @author Benjamin Gandon
  */
@@ -82,9 +134,14 @@ public class SimpleTaxConfig {
     private static final String STARTING_ON_SUFFIX = ".startingOn";
     private static final String STOPPING_ON_SUFFIX = ".stoppingOn";
 
-    private static final DateTimeZone DEFAULT_TIME_ZONE = null;
-    private static final int DEFAULT_TAX_AMOUNT_PRECISION = 2;
+    /**
+     * The default description for
+     * {@linkplain org.killbill.billing.invoice.api.InvoiceItemType#TAX TAX
+     * items}.
+     */
     public static final String DEFAULT_TAX_ITEM_DESC = "tax";
+    private static final DateTimeZone DEFAULT_TAXATION_TIME_ZONE = null;
+    private static final int DEFAULT_TAX_AMOUNT_PRECISION = 2;
     private static final BigDecimal DEFAULT_TAX_RATE = new BigDecimal("0.00");
     private static final Class<? extends TaxResolver> DEFAULT_RESOLVER = NullTaxResolver.class;
     private static final Constructor<? extends TaxResolver> DEFAULT_RESOLVER_CONSTRUCTOR;
@@ -127,7 +184,7 @@ public class SimpleTaxConfig {
     }
 
     private void parseConfig() {
-        taxationTimeZone = timeZone(cfg, TAXATION_TIME_ZONE_PROPERTY, DEFAULT_TIME_ZONE);
+        taxationTimeZone = timeZone(cfg, TAXATION_TIME_ZONE_PROPERTY, DEFAULT_TAXATION_TIME_ZONE);
         taxAmountPrecision = integer(cfg, TAX_AMOUNT_PRECISION_PROPERTY, DEFAULT_TAX_AMOUNT_PRECISION);
         taxResolverConstructor = resolverConstructor(cfg, TAX_RESOLVER_PROPERTY, DEFAULT_RESOLVER_CONSTRUCTOR);
 
@@ -137,6 +194,10 @@ public class SimpleTaxConfig {
     private static final String DEFAULT_TAXATION_MSG = " Default taxation of [" + DEFAULT_RESOLVER
             + "] will be applied, which disables any new taxation.";
 
+    /**
+     * A bunch of consistency checks, in order for plugin users to acknowledge
+     * any configuration issues as early as possible.
+     */
     private void earlyConsistencyChecks() {
         String resolverClassName = cfg.get(TAX_RESOLVER_PROPERTY);
         if (isBlank(resolverClassName)) {
@@ -185,6 +246,10 @@ public class SimpleTaxConfig {
         }
     }
 
+    /**
+     * @return A new immutable map of configured tax codes, identified by their
+     *         unique names. Never {@code null}, with no {@code null} elements.
+     */
     private static Map<String, TaxCode> parseTaxCodes(Map<String, String> cfg) {
         Set<String> names = newLinkedHashSet();
         String lastPropNamePfx = null;
@@ -212,6 +277,10 @@ public class SimpleTaxConfig {
         return codes.build();
     }
 
+    /**
+     * Utility method to extract a portion of a property named, supposed to be
+     * delimited by {@linkplain #PROP_NAME_SEGMENT_SEPARATOR dots}.
+     */
     private static String extractName(String propName, int prefixLength) {
         int endOfNameSegment = indexOf(propName, PROP_NAME_SEGMENT_SEPARATOR, prefixLength);
         if (endOfNameSegment == INDEX_NOT_FOUND) {
@@ -220,6 +289,9 @@ public class SimpleTaxConfig {
         return propName.substring(TAX_CODES_PREFIX.length(), endOfNameSegment);
     }
 
+    /**
+     * @return The time zone to use when considering instants.
+     */
     @Nullable
     public DateTimeZone getTaxationTimeZone() {
         return taxationTimeZone;
@@ -234,22 +306,38 @@ public class SimpleTaxConfig {
         return taxAmountPrecision;
     }
 
+    /**
+     * A factory for building the configured {@link TaxResolver} implementation.
+     *
+     * @return The constructor to use when building the applicable
+     *         {@linkplain TaxResolver tax resolver}. Never {@code null}.
+     */
     @Nonnull
     public Constructor<? extends TaxResolver> getTaxResolverConstructor() {
         return taxResolverConstructor;
     }
 
+    /**
+     * Finds the definition of a tax code, as identified by its (unique) name.
+     *
+     * @param name
+     *            A name for a tax code.
+     * @return A matching tax code from the configuration, or {@code null} if
+     *         none matches.
+     */
     @Nullable
     public TaxCode findTaxCode(@Nullable String name) {
         return taxCodesByName.get(name);
     }
 
     /**
+     * Lists the configured tax codes for a given product of the catalog.
+     *
      * @param productName
      *            The name of a product in the catalog. Should not be
      *            {@code null}.
-     * @return A set of tax code definitions. Never {@code null}, with no
-     *         {@code null} elements.
+     * @return A new immutable set of configured tax code definitions. Never
+     *         {@code null}, with no {@code null} elements.
      */
     @Nonnull
     public Set<TaxCode> getConfiguredTaxCodes(@Nonnull String productName) {
@@ -262,35 +350,46 @@ public class SimpleTaxConfig {
     }
 
     /**
+     * Converts a comma-separated list of tax codes into a set of tax code
+     * definitions.
+     * <p>
+     * Tax codes are identified by their name, which are supposed to be unique.
+     * The resulting set is ordered in the same way as tax codes were listed,
+     * with no duplicates.
+     *
      * @param names
-     *            A comma-separated list of tax codes names. Should not be
+     *            A comma-separated list of tax codes names. Must not be
      *            {@code null}.
      * @param errMsgContext
      *            An context message for errors, that tells where the
-     *            {@code names} value comes from.
-     * @return A set of tax code definitions. Never {@code null}, with no
-     *         {@code null} elements.
+     *            {@code names} value comes from. Should not be {@code null}.
+     * @return A new immutable set of configured tax code definitions that match
+     *         the given list of names. Never {@code null}, with no {@code null}
+     *         elements.
      * @throws NullPointerException
      *             when {@code names} is null.
      */
     @Nonnull
-    public Set<TaxCode> findTaxCodes(@Nonnull String names, String errMsgContext) {
+    public Set<TaxCode> findTaxCodes(@Nonnull String names, @Nonnull String errMsgContext) {
         return findTaxCodesInternal(names, "taxCode [%1$s] " + errMsgContext + " is undefined."
                 + " Erroneously removed from config? Ignoring it.");
     }
 
     /**
      * @param names
+     *            A comma-separated list of tax code names. Must not be
+     *            {@code null}.
      * @param errMsgFmt
-     *            An error message {@linkplain java.util.Format format} where
+     *            An error message {@linkplain java.util.Formatter format} where
      *            {@code %1$s} will be replaced by the tax code that cannot be
-     *            found in the config.
-     * @return
+     *            found in the config. Must not be {@code null}.
+     * @return A set of configured tax code definitions. Never {@code null}.
      * @throws NullPointerException
-     *             when {@code names} is null.
+     *             when {@code names} is {@code null} or when {@code errMsgFmt}
+     *             is {@code null}.
      */
     @Nonnull
-    public Set<TaxCode> findTaxCodesInternal(@Nonnull String names, String errMsgFmt) {
+    private Set<TaxCode> findTaxCodesInternal(@Nonnull String names, @Nonnull String errMsgFmt) {
         ImmutableSet.Builder<TaxCode> taxCodes = ImmutableSet.builder();
         for (String name : splitTaxCodes(names)) {
             TaxCode taxCode = findTaxCode(name);

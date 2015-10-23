@@ -27,7 +27,7 @@ import org.killbill.billing.util.customfield.CustomField;
 
 /**
  * An immutable implementation of the {@link CustomField} interface, along with
- * its builder.
+ * its builder class.
  *
  * @author Benjamin Gandon
  */
@@ -78,14 +78,27 @@ public class ImmutableCustomField implements CustomField {
         return fieldValue;
     }
 
+    /**
+     * @return A new {@link ImmutableCustomField} builder.
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * @param field
+     *            A template custom field, the data of which should be copied.
+     * @return A new {@link ImmutableCustomField} builder.
+     */
     public static Builder builder(CustomField field) {
         return new Builder(field);
     }
 
+    /**
+     * A builder class for {@link ImmutableCustomField}s.
+     *
+     * @author Benjamin Gandon
+     */
     public static class Builder {
 
         private UUID id;
@@ -112,6 +125,10 @@ public class ImmutableCustomField implements CustomField {
             fieldValue = src.getFieldValue();
         }
 
+        /**
+         * @return A new {@link ImmutableCustomField}, with the properties set
+         *         in this builder.
+         */
         public CustomField build() {
             ImmutableCustomField taxField = new ImmutableCustomField();
             taxField.id = id;
@@ -124,24 +141,44 @@ public class ImmutableCustomField implements CustomField {
             return taxField;
         }
 
+        /**
+         * @param objectId
+         *            The object identifier to use.
+         * @return this builder
+         */
         public Builder withObjectId(UUID objectId) {
             this.objectId = objectId;
             updatedDate = now();
             return this;
         }
 
+        /**
+         * @param objectType
+         *            The object type to use.
+         * @return this builder
+         */
         public Builder withObjectType(ObjectType objectType) {
             this.objectType = objectType;
             updatedDate = now();
             return this;
         }
 
+        /**
+         * @param fieldName
+         *            The field name to use.
+         * @return this builder
+         */
         public Builder withFieldName(String fieldName) {
             this.fieldName = fieldName;
             updatedDate = now();
             return this;
         }
 
+        /**
+         * @param fieldValue
+         *            The field value to use.
+         * @return this builder
+         */
         public Builder withFieldValue(String fieldValue) {
             this.fieldValue = fieldValue;
             updatedDate = now();

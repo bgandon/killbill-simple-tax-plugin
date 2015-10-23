@@ -36,7 +36,7 @@ public interface TaxResolver {
 
     /**
      * Retain only one applicable tax code, so that taxation of invoice item can
-     * be done.
+     * be done, based on the returned tax code.
      *
      * @param taxCodes
      *            The candidate tax codes for this invoice item.

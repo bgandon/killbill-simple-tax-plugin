@@ -1,8 +1,27 @@
+<!--
+   Copyright 2015 Benjamin Gandon
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
 Kill Bill Simple Tax Plugin
 ===========================
 
-This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements a
-fixed tax rate that applies to all taxable items of generated invoices.
+This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements
+tax codes with  fixed tax rates and cut-off dates. Tax codes can be associated
+to products of the Kill Bill catalog, or specifically set on invoice items.
+
+Taxable invoice items then get properly taxed, with the applicable rate, as
+specified in tax codes.
 
 The typical use case for this plugin is a regulatory requirement for a fixed
 [VAT](https://en.wikipedia.org/wiki/Value-added_tax) rate.
@@ -12,7 +31,9 @@ Configuration
 -------------
 
 The configuration properties can be specified globally (via System
-Properties), or on a per tenant basis:
+Properties), or on a per tenant basis. Here is a typical setup for French VAT
+rates on the `SpyCarAdvanced.xml` catalog, implementing the cutoff date of
+2014-01-01.
 
 ```bash
 curl -v \
@@ -23,10 +44,50 @@ curl -v \
      -H 'X-Killbill-CreatedBy: admin' \
      -H 'Content-Type: text/plain' \
      -d \
-'org.killbill.billing.plugin.simpletax.tax-item.description=tax
-org.killbill.billing.plugin.simpletax.tax-item.amount.precision=2
-org.killbill.billing.plugin.simpletax.tax-rate=0.20
-org.killbill.billing.plugin.simpletax.tax-rate.precision=2' \
+'org.killbill.billing.plugin.simpletax.taxResolver = org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver
+org.killbill.billing.plugin.simpletax.taxItem.amount.precision = 2
+
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_2_1%.taxItem.description = VAT 2.1%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_2_1%.rate = 0.021
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_2_1%.startingOn = 2012-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_2_1%.stoppingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_5_5%.taxItem.description = VAT 5.5%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_5_5%.rate = 0.055
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_5_5%.startingOn = 2012-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_5_5%.stoppingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_10_0%.taxItem.description = VAT 7.0%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_10_0%.rate = 0.070
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_10_0%.startingOn = 2012-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_10_0%.stoppingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_20_0%.taxItem.description = VAT 19.6%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_20_0%.rate = 0.196
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_20_0%.startingOn = 2012-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2012_20_0%.stoppingOn = 2014-01-01
+
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_2_1%.taxItem.description = VAT 2.1%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_2_1%.rate = 0.021
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_2_1%.startingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_2_1%.stoppingOn = 
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_5_5%.taxItem.description = VAT 5.5%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_5_5%.rate = 0.055
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_5_5%.startingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_5_5%.stoppingOn = 
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_10_0%.taxItem.description = VAT 10.0%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_10_0%.rate = 0.100
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_10_0%.startingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_10_0%.stoppingOn = 
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_20_0%.taxItem.description = VAT 20.0%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_20_0%.rate = 0.200
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_20_0%.startingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_2014_20_0%.stoppingOn = 
+
+org.killbill.billing.plugin.simpletax.products.Standard = VAT_2012_20_0%, VAT_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Sport = VAT_2012_20_0%, VAT_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Super = VAT_2012_20_0%, VAT_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.OilSlick = VAT_2012_20_0%, VAT_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_2012_20_0%, VAT_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Gas = VAT_2012_20_0%, VAT_2014_20_0%
+' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
@@ -36,10 +97,9 @@ The values above are the default values.
 Upcoming improvements
 ---------------------
 
-1. Add tax rate info to items, with `TagUserApi.addTags()`
-2. Implement cutoff dates for planned tax rate changes
-3. Implement conditional taxes, based on account country
-4. Implement conditional taxes, based on invoice items tags
+1. Implement conditional taxes, based on account country
+2. Have tax amount scales depend on the currency used
+3. Have i18n for tax items descriptions
 
 
 Author and License

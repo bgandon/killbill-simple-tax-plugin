@@ -38,7 +38,7 @@ import com.google.common.base.Predicate;
  * <p>
  * The basic implementation here focuses on the case of service providers.
  * <p>
- * The applicable date here is the date when the service period ended.
+ * The applicable date here is the date when the service period <em>ended</em>.
  * <p>
  * Source: <a href="http://bofip.impots.gouv.fr/bofip/283-PGP">TVA - Base
  * d'imposition - Fait générateur et exigibilité - Prestations de services</a>
@@ -47,7 +47,7 @@ import com.google.common.base.Predicate;
  * <ul>
  * <li>If any taxation time zone was configured, then the applicable date is
  * interpreted as the first instant of that day in the account time zone, and
- * the tadation date is the date it was in the taxation time zone at that
+ * the taxation date is the date it was in the taxation time zone at that
  * instant.</li>
  * <li>Otherwise, when no taxation time zone is configured, the applicable date
  * is kept interpreted in the time zone of the account.</li>
@@ -60,6 +60,13 @@ public class InvoiceItemEndDateBasedResolver implements TaxResolver {
     private SimpleTaxConfig cfg;
     private Account account;
 
+    /**
+     * Constructs a new resolver that considers end dates to select the first
+     * applicable tax code.
+     *
+     * @param ctx
+     *            The tax computation context to use.
+     */
     public InvoiceItemEndDateBasedResolver(TaxComputationContext ctx) {
         super();
         cfg = ctx.getConfig();

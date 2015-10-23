@@ -70,9 +70,12 @@ public class TaxComputationContext {
      * @param config
      *            The plugin configuration.
      * @param account
-     *            The account that currently treated invoice relate to.
+     *            The account that the newly created invoice relates to.
+     * @param allInvoices
+     *            The set of all invoices for the given account.
      * @param toAdjustedAmount
-     *            A function that computes adjusted amounts.
+     *            A function that computes adjusted amounts for the listed
+     *            invoices of the given account.
      * @param byAdjustedAmount
      *            An ordering that orders {@link InvoiceItem}s by adjusted
      *            amount.
@@ -99,18 +102,24 @@ public class TaxComputationContext {
     }
 
     /**
-     * @return The account that currently treated invoice relate to.
+     * @return The account that the newly created invoice relates to.
      */
     public Account getAccount() {
         return account;
     }
 
+    /**
+     * @return The set of all invoices for the {@linkplain #getAccount() given
+     *         account}.
+     */
     public Set<Invoice> getAllInvoices() {
         return allInvoices;
     }
 
     /**
-     * @return A function that computes adjusted amounts.
+     * @return A function that computes adjusted amounts for the
+     *         {@linkplain #getAllInvoices() set of invoices} of the
+     *         {@linkplain #getAccount() given account}.
      */
     public Function<InvoiceItem, BigDecimal> toAdjustedAmount() {
         return toAdjustedAmount;

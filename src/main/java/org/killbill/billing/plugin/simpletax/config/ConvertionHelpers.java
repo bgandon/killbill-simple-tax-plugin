@@ -19,7 +19,7 @@ package org.killbill.billing.plugin.simpletax.config;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.primitives.Ints.tryParse;
 import static java.lang.Thread.currentThread;
-import static java.math.RoundingMode.HALF_UP;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.joda.time.format.ISODateTimeFormat.localDateParser;
 
@@ -43,68 +43,137 @@ import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 import com.google.common.collect.ImmutableSet;
 
 /**
+ * Utility methods that:
+ * <ul>
+ * <li>Convert strings from configuration properties into objects with defaults</li>
+ * <li>Convert comma-separated tax codes to sets of tax code definitions, back
+ * and forth</li>
+ * <li>Convert a local date from a time zone to another time zone, with
+ * assumptions</li>
+ * </ul>
+ *
  * @author Benjamin Gandon
  */
 public abstract class ConvertionHelpers {
 
     /**
-     * Utility method to construct a {@link BigDecimal} instance from a
-     * configuration property, or return a default value.
+     * Constructs a {@link BigDecimal} instance from a configuration property,
+     * or return a default value when the property is blank or inexistent.
      *
      * @param cfg
-     *            TODO
+     *            The plugin configuration properties.
      * @param propName
      *            The property name.
      * @param defaultValue
      *            The default value.
-     * @param applicableScale
-     *            The default scale to apply.
-     *
      * @return A new {@link BigDecimal} instance reflecting the designated
-     *         configuration property, or the default value.
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
      */
-    static BigDecimal bigDecimal(Map<String, String> cfg, String propName, BigDecimal defaultValue, int applicableScale) {
-        BigDecimal value = bigDecimal(cfg, propName, defaultValue);
-        return value.setScale(applicableScale, HALF_UP);
-    }
-
     static BigDecimal bigDecimal(Map<String, String> cfg, String propName, BigDecimal defaultValue) {
         String strValue = cfg.get(propName);
-        BigDecimal convertedValue = null;
-        try {
-            convertedValue = strValue == null ? null : new BigDecimal(strValue);
-        } catch (NumberFormatException ignore) {
+        if (isBlank(strValue)) {
+            return defaultValue;
         }
-        return firstNonNull(convertedValue, defaultValue);
+        try {
+            return new BigDecimal(strValue);
+        } catch (NumberFormatException exc) {
+            return defaultValue;
+        }
     }
 
+    /**
+     * Returns a non-{@code null} {@link Integer} value from a configuration
+     * property, or return a default value when the property is blank or
+     * inexistent.
+     *
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultValue
+     *            The default value.
+     * @return A non-{@code null} integer value reflecting the designated
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
+     */
     static int integer(Map<String, String> cfg, String propName, int defaultValue) {
         String strValue = cfg.get(propName);
-        Integer convertedValue = strValue == null ? null : tryParse(strValue);
+        if (isBlank(strValue)) {
+            return defaultValue;
+        }
+        Integer convertedValue = tryParse(strValue);
         return firstNonNull(convertedValue, defaultValue);
     }
 
+    /**
+     * Returns a non-{@code null} {@link String} from a configuration property,
+     * or return a default value when the property is blank or inexistent.
+     *
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultValue
+     *            The default value. Must not be {@code null}.
+     * @return A string reflecting the designated configuration property, or the
+     *         given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} or {@code defaultValue} are {@code null}.
+     */
     static String string(Map<String, String> cfg, String propName, String defaultValue) {
         return firstNonNull(cfg.get(propName), defaultValue);
     }
 
+    /**
+     * Constructs a {@link LocalDate} instance from a configuration property, or
+     * return a default value when the property is blank or inexistent.
+     *
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultValue
+     *            The default value.
+     * @return A new {@link LocalDate} instance reflecting the designated
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
+     */
     static LocalDate localDate(Map<String, String> cfg, String propName, LocalDate defaultValue) {
         String date = cfg.get(propName);
-        if (date == null) {
+        if (isBlank(date)) {
             return defaultValue;
         }
         try {
             return localDateParser().parseLocalDate(date);
-        } catch (RuntimeException exc) {
+        } catch (IllegalArgumentException exc) {
             return defaultValue;
         }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Loads a class from a configuration property and returns its constructor
+     * taking a single {@link TaxComputationContext} argument, or return a
+     * default value when the property is blank or inexistent.
+     *
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultValue
+     *            The default value.
+     * @return A new {@link Constructor} instance reflecting the designated
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
+     */
     static Constructor<? extends TaxResolver> resolverConstructor(Map<String, String> cfg, String propName,
             Constructor<? extends TaxResolver> defaultValue) {
         String className = cfg.get(propName);
-        if (className == null) {
+        if (isBlank(className)) {
             return defaultValue;
         }
         ClassLoader loader = currentThread().getContextClassLoader();
@@ -124,6 +193,15 @@ public abstract class ConvertionHelpers {
         } catch (NoSuchMethodException exc) {
             return defaultValue;
         }
+        return asConstructorOfTaxResolver(constructor);
+    }
+
+    /**
+     * The point here is just to reduce the amount of code in which we suppress
+     * {@code "unchecked"} warnings with {@code @SuppressWarnings("unchecked")}.
+     */
+    @SuppressWarnings("unchecked")
+    private static Constructor<? extends TaxResolver> asConstructorOfTaxResolver(Constructor<?> constructor) {
         return (Constructor<TaxResolver>) constructor;
     }
 
@@ -131,25 +209,40 @@ public abstract class ConvertionHelpers {
      * Thread-safe time zone parser.
      *
      * <pre>
-     * time-zone  = identifier | offset
-     * identifier = ID [A-Z][a-z]+/[A-Z][a-z]+
-     * offset     = 'Z' | (('+' | '-') HH [':' mm [':' ss [('.' | ',') SSS]]])
+     * time-zone     = tz-identifier | offset
+     * tz-identifier = ID [A-Z][a-z]+/[A-Z][a-z]+
+     * offset        = 'Z' | (('+' | '-') HH [':' mm [':' ss [('.' | ',') SSS]]])
      * </pre>
-     *
+     * <p>
      * Specifying a time zone identifier like {@code Europe/Paris} is always
      * preferable.
      *
      * @see DateTimeZone#getAvailableIDs()
      */
     private static final DateTimeFormatter TIME_ZONE_PARSER = new DateTimeFormatterBuilder()
-            .append(null,
-                    new DateTimeParser[] { new DateTimeFormatterBuilder().appendTimeZoneId().toParser(),
-                            new DateTimeFormatterBuilder().appendTimeZoneOffset("Z", true, 2, 4).toParser() })
+    .append(null,
+            new DateTimeParser[] { new DateTimeFormatterBuilder().appendTimeZoneId().toParser(),
+            new DateTimeFormatterBuilder().appendTimeZoneOffset("Z", true, 2, 4).toParser() })
             .toFormatter().withOffsetParsed();
 
+    /**
+     * Constructs a {@link DateTimeZone} instance from a configuration property,
+     * or return a default value when the property is blank or inexistent.
+     * 
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultTimeZone
+     *            The default value.
+     * @return A new {@link DateTimeZone} instance reflecting the designated
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
+     */
     static DateTimeZone timeZone(Map<String, String> cfg, String propName, DateTimeZone defaultTimeZone) {
         String timeZone = cfg.get(propName);
-        if (timeZone == null) {
+        if (isBlank(timeZone)) {
             return defaultTimeZone;
         }
         try {
@@ -163,6 +256,9 @@ public abstract class ConvertionHelpers {
     private static final String TAX_CODES_SPLIT_SEPARATORS = TAX_CODES_JOIN_SEPARATOR + "\t\n\f\r";
 
     /**
+     * Converts tax codes to their definitions, preserving the order in which
+     * the are specified.
+     *
      * @param names
      *            The comma-separated list of tax codes, identified by their
      *            names. Must not be {@code null}.
@@ -181,6 +277,9 @@ public abstract class ConvertionHelpers {
     }
 
     /**
+     * Converts tax code definitions into a comma-separated list of tax codes,
+     * preserving the order in which they are iterated.
+     *
      * @param taxCodes
      *            The set of tax codes to convert.
      * @return A comma-separated list of tax codes.

@@ -29,7 +29,7 @@
     <packaging>bundle</packaging>
 
     <name>Kill Bill simple tax plugin</name>
-    <description>This OSGI plugin brings a fixed tax rate feature to the Bill Bill server when computing invoices.</description>
+    <description>An OSGi plugin implementing tax codes with fixed rates and cut-off dates.</description>
 
     <dependencies>
         <dependency>

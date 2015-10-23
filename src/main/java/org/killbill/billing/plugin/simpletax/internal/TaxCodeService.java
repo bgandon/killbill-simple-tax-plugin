@@ -55,14 +55,15 @@ public class TaxCodeService {
     private SetMultimap<UUID, CustomField> taxFieldsOfInvoices;
 
     /**
-     * Creates a new lazy value for the collection of tax codes.
+     * Creates a service that helps listing tax codes.
      *
+     * @param catalog
+     *            The Kill Bill catalog to use.
      * @param cfg
      *            The plugin configuration.
-     * @param api
-     *            The Kill Bill meta-API.
-     * @param context
-     *            The call context.
+     * @param taxFieldsOfInvoices
+     *            The tax fields of all account invoices, grouped by their
+     *            related taxable items.
      */
     public TaxCodeService(LazyValue<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
             SetMultimap<UUID, CustomField> taxFieldsOfInvoices) {
@@ -73,14 +74,19 @@ public class TaxCodeService {
     }
 
     /**
+     * Enumerate configured tax codes for the items of a given invoice. The
+     * order of configured tax codes is preserved.
+     * <p>
      * Final resolution is not done here because it represents custom logic that
      * is regulation-dependent.
      *
      * @param invoice
      *            the invoice the items of which need to be taxed.
-     * @return The applicable tax codes, grouped by the identifiers of their
-     *         related invoice items. Never {@code null}, and guaranteed not
-     *         having any {@code null} values.
+     * @return An immutable multi-map of unique applicable tax codes, grouped by
+     *         the identifiers of their related invoice items. Never
+     *         {@code null}, and guaranteed not having any {@code null} values.
+     * @throws NullPointerException
+     *             when {@code invoice} is {@code null}.
      */
     @Nonnull
     public SetMultimap<UUID, TaxCode> resolveTaxCodesFromConfig(Invoice invoice) {
@@ -120,14 +126,17 @@ public class TaxCodeService {
     }
 
     /**
-     * Find tax codes of invoices items, looking for a custom field named
-     * {@value #TAX_CODES_FIELD_NAME} on the items.
+     * Find tax codes that apply to the items of a given invoice, looking for
+     * custom fields named {@value #TAX_CODES_FIELD_NAME} that can be attached
+     * to these items.
      *
      * @param invoice
      *            An invoice in which existing tax codes are to be found.
      * @return The existing tax codes, grouped by the identifiers of their
      *         related invoice items. Never {@code null}, and guaranteed not
      *         having any {@code null} values.
+     * @throws NullPointerException
+     *             when {@code invoice} is {@code null}.
      */
     @Nonnull
     public SetMultimap<UUID, TaxCode> findExistingTaxCodes(Invoice invoice) {

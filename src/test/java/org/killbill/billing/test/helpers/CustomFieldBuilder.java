@@ -6,6 +6,7 @@ import org.killbill.billing.ObjectType;
 import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
 import org.killbill.billing.util.customfield.CustomField;
 
+@SuppressWarnings("javadoc")
 public class CustomFieldBuilder implements Builder<CustomField> {
 
     private UUID objectId;
