@@ -22,6 +22,7 @@ import static org.killbill.billing.catalog.api.Currency.EUR;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import org.joda.time.LocalDate;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceItemType;
@@ -29,12 +30,13 @@ import org.killbill.billing.plugin.api.invoice.PluginInvoiceItem;
 
 @SuppressWarnings("javadoc")
 public class InvoiceItemBuilder implements Builder<InvoiceItem> {
-    Invoice invoice;
-    InvoiceItemType type;
-    BigDecimal amount;
-    Promise<InvoiceItem> linkedItem;
+    private Invoice invoice;
+    private InvoiceItemType type;
+    private LocalDate startDate, endDate;
+    private BigDecimal amount;
+    private Promise<InvoiceItem> linkedItem;
 
-    Promise<InvoiceItem> builtItemHolder;
+    private Promise<InvoiceItem> builtItemHolder;
 
     @Override
     public InvoiceItem build() {
@@ -43,7 +45,7 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
         UUID accountId = invoice == null ? null : invoice.getAccountId();
         String description = type == null ? null : "Test " + type.name();
         UUID linkedItemId = linkedItem == null ? null : linkedItem.get().getId();
-        PluginInvoiceItem item = new PluginInvoiceItem(id, type, invoiceId, accountId, null, null, amount, EUR,
+        PluginInvoiceItem item = new PluginInvoiceItem(id, type, invoiceId, accountId, startDate, endDate, amount, EUR,
                 description, null, null, null, null, null, linkedItemId, null, null, null);
         if (builtItemHolder != null) {
             builtItemHolder.resolve(item);
@@ -58,6 +60,16 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
 
     public InvoiceItemBuilder withType(InvoiceItemType type) {
         this.type = type;
+        return this;
+    }
+
+    public InvoiceItemBuilder withStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+        return this;
+    }
+
+    public InvoiceItemBuilder withEndDate(LocalDate endDate) {
+        this.endDate = endDate;
         return this;
     }
 
