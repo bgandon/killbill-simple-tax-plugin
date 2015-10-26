@@ -29,6 +29,9 @@
 <listAttribute key="org.testng.eclipse.METHOD_TEST_LIST"/>
 <listAttribute key="org.testng.eclipse.PACKAGE_TEST_LIST">
 <listEntry value="org.killbill.billing.plugin.simpletax"/>
+<listEntry value="org.killbill.billing.plugin.simpletax.config"/>
+<listEntry value="org.killbill.billing.plugin.simpletax.resolving"/>
+<listEntry value="org.killbill.billing.plugin.simpletax.util"/>
 </listAttribute>
 <mapAttribute key="org.testng.eclipse.PARAMETERS"/>
 <booleanAttribute key="org.testng.eclipse.PREFIX_VM_ARGS_FROM_POM" value="true"/>

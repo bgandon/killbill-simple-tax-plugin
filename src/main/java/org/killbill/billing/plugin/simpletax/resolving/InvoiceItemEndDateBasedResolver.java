@@ -76,11 +76,12 @@ public class InvoiceItemEndDateBasedResolver implements TaxResolver {
     @Override
     public TaxCode applicableCodeForItem(Set<TaxCode> taxCodes, InvoiceItem item) {
         DateTimeZone accountTimeZone = account.getTimeZone();
-        DateTimeZone taxationTimeZone = firstNonNull(cfg.getTaxationTimeZone(), accountTimeZone);
+        DateTimeZone taxationTimeZone = cfg.getTaxationTimeZone();
 
         LocalDate applicableDate = firstNonNull(item.getEndDate(), item.getStartDate());
 
-        final LocalDate taxationDate = convertTimeZone(applicableDate, accountTimeZone, taxationTimeZone);
+        final LocalDate taxationDate = taxationTimeZone == null ? applicableDate : convertTimeZone(applicableDate,
+                accountTimeZone, taxationTimeZone);
 
         return tryFind(taxCodes, new Predicate<TaxCode>() {
             @Override

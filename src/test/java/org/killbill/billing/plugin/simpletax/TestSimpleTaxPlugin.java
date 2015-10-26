@@ -79,6 +79,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+/**
+ * Tests for {@link SimpleTaxPlugin}.
+ *
+ * @author Benjamin Gandon
+ */
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxPlugin {
 

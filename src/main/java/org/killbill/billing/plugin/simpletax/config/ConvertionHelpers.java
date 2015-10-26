@@ -17,10 +17,12 @@
 package org.killbill.billing.plugin.simpletax.config;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.primitives.Ints.tryParse;
 import static java.lang.Thread.currentThread;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.split;
+import static org.apache.commons.lang3.StringUtils.trim;
 import static org.joda.time.format.ISODateTimeFormat.localDateParser;
 
 import java.lang.reflect.Constructor;
@@ -30,7 +32,6 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -77,7 +78,7 @@ public abstract class ConvertionHelpers {
             return defaultValue;
         }
         try {
-            return new BigDecimal(strValue);
+            return new BigDecimal(trim(strValue));
         } catch (NumberFormatException exc) {
             return defaultValue;
         }
@@ -104,7 +105,7 @@ public abstract class ConvertionHelpers {
         if (isBlank(strValue)) {
             return defaultValue;
         }
-        Integer convertedValue = tryParse(strValue);
+        Integer convertedValue = tryParse(trim(strValue));
         return firstNonNull(convertedValue, defaultValue);
     }
 
@@ -148,7 +149,7 @@ public abstract class ConvertionHelpers {
             return defaultValue;
         }
         try {
-            return localDateParser().parseLocalDate(date);
+            return localDateParser().parseLocalDate(trim(date));
         } catch (IllegalArgumentException exc) {
             return defaultValue;
         }
@@ -179,7 +180,7 @@ public abstract class ConvertionHelpers {
         ClassLoader loader = currentThread().getContextClassLoader();
         Class<?> clazz;
         try {
-            clazz = loader.loadClass(className);
+            clazz = loader.loadClass(trim(className));
         } catch (ClassNotFoundException exc) {
             return defaultValue;
         }
@@ -220,15 +221,15 @@ public abstract class ConvertionHelpers {
      * @see DateTimeZone#getAvailableIDs()
      */
     private static final DateTimeFormatter TIME_ZONE_PARSER = new DateTimeFormatterBuilder()
-    .append(null,
-            new DateTimeParser[] { new DateTimeFormatterBuilder().appendTimeZoneId().toParser(),
-            new DateTimeFormatterBuilder().appendTimeZoneOffset("Z", true, 2, 4).toParser() })
+            .append(null,
+                    new DateTimeParser[] { new DateTimeFormatterBuilder().appendTimeZoneId().toParser(),
+                            new DateTimeFormatterBuilder().appendTimeZoneOffset("Z", true, 2, 4).toParser() })
             .toFormatter().withOffsetParsed();
 
     /**
      * Constructs a {@link DateTimeZone} instance from a configuration property,
      * or return a default value when the property is blank or inexistent.
-     * 
+     *
      * @param cfg
      *            The plugin configuration properties.
      * @param propName
@@ -246,7 +247,7 @@ public abstract class ConvertionHelpers {
             return defaultTimeZone;
         }
         try {
-            return TIME_ZONE_PARSER.parseDateTime(timeZone).getZone();
+            return TIME_ZONE_PARSER.parseDateTime(trim(timeZone)).getZone();
         } catch (IllegalArgumentException e) {
             return defaultTimeZone;
         }
@@ -309,16 +310,20 @@ public abstract class ConvertionHelpers {
      *
      * @param localDate
      *            A date specification, to be interpreted in the
-     *            {@code fromTimeZone}.
+     *            {@code fromTimeZone}. Never {@code null}.
      * @param originTimeZone
      *            The zone in which the partial date should be “interpreted”.
+     *            Never {@code null}.
      * @param targetTimeZone
-     *            The zone in which the first instant of the day is questionned.
+     *            The zone in which the first instant of the day is requested.
+     *            Never {@code null}.
      * @return The date in {@code toTimeZone} for the first instant of the day
      *         {@code localDate} in the time zone {@code fromTimeZone}
      */
     public static LocalDate convertTimeZone(LocalDate localDate, DateTimeZone originTimeZone,
             DateTimeZone targetTimeZone) {
-        return new DateTime(localDate, originTimeZone).withTimeAtStartOfDay().withZone(targetTimeZone).toLocalDate();
+        checkNotNull(originTimeZone);
+        checkNotNull(targetTimeZone);
+        return localDate.toDateTimeAtStartOfDay(originTimeZone).withZone(targetTimeZone).toLocalDate();
     }
 }

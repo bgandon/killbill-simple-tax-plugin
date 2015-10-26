@@ -33,7 +33,7 @@ import com.google.common.collect.Multimap;
  *
  * @author Benjamin Gandon
  */
-public class InvoiceHelpers {
+public abstract class InvoiceHelpers {
 
     /**
      * Utility method that computes the amount of a given
@@ -64,10 +64,10 @@ public class InvoiceHelpers {
      * Utility method that sums the given amounts.
      *
      * @param amounts
-     *            the amounts to sum, non of which can be {@code null}.
-     * @return the sum of amounts, never {@code null}.
+     *            The amounts to sum, none of which can be {@code null}.
+     * @return The sum of amounts, never {@code null}.
      */
-    public static BigDecimal sumAmounts(@Nullable Iterable<BigDecimal> amounts) {
+    public static BigDecimal sumAmounts(Iterable<BigDecimal> amounts) {
         BigDecimal sum = ZERO;
         for (BigDecimal amount : amounts) {
             sum = sum.add(amount);
