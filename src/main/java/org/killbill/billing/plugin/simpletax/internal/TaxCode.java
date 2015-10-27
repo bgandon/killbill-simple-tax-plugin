@@ -18,6 +18,9 @@ package org.killbill.billing.plugin.simpletax.internal;
 
 import java.math.BigDecimal;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.joda.time.LocalDate;
 
 /**
@@ -59,6 +62,56 @@ public class TaxCode {
         this.rate = rate;
         this.startingOn = startingOn;
         this.stoppingOn = stoppingOn;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (obj.getClass() != getClass()) {
+            return false;
+        }
+        TaxCode rhs = (TaxCode) obj;
+        if (!new EqualsBuilder()//
+                .append(name, rhs.name)//
+                .append(taxItemDescription, rhs.taxItemDescription)//
+                .append(startingOn, rhs.startingOn)//
+                .append(stoppingOn, rhs.stoppingOn)//
+                .isEquals()) {
+            return false;
+        }
+        // Custom processing BigDecimal equality ignoring scale
+        if (rate == null) {
+            return rhs.rate == null;
+        }
+        return rate.compareTo(rhs.rate) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder().appendSuper(super.hashCode())//
+                .append(name)//
+                .append(taxItemDescription)//
+                // Custom processing BigDecimal hash ignoring scale
+                .append(rate == null ? 0 : rate.toString())//
+                .append(startingOn)//
+                .append(stoppingOn)//
+                .toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)//
+                .append("name", name)//
+                .append("taxItemDescription", taxItemDescription)//
+                .append("rate", rate)//
+                .append("startingOn", startingOn)//
+                .append("stoppingOn", stoppingOn)//
+                .toString();
     }
 
     /**
