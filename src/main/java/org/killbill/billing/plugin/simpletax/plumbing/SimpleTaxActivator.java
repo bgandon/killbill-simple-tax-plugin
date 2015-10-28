@@ -46,6 +46,29 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
     /**
      * This method is the first to be called.
      * <p>
+     * It creates a configuration manager, creates the plugin, and then
+     * registers it into the system.
+     * <p>
+     * {@inheritDoc}
+     *
+     * @see org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase#start(org.osgi.framework.BundleContext)
+     */
+    @Override
+    public void start(BundleContext context) throws Exception {
+        // Note: super.start() creates the configHandler that we later use in
+        // createDefaultConfig() below
+        super.start(context);
+
+        createDefaultConfig();
+
+        InvoicePluginApi plugin = createPlugin();
+
+        registerInvoicePluginApi(context, plugin);
+    }
+
+    /**
+     * This method is called by {@link KillbillActivatorBase#start}.
+     * <p>
      * It creates the configuration “handler” that will <em>manage</em> all the
      * plugin configuration lifecycle (create, reconfigure, destroy), supporting
      * the per-tenant nature of these configurations, with appropriate defaults.
@@ -56,27 +79,6 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
     public OSGIKillbillEventHandler getOSGIKillbillEventHandler() {
         configHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, killbillAPI, logService);
         return new PluginConfigurationEventHandler(configHandler);
-    }
-
-    /**
-     * This method is called after {@link #getOSGIKillbillEventHandler}.
-     * <p>
-     * It creates a configuration manager, creates the plugin, and then
-     * registers it into the system.
-     * <p>
-     * {@inheritDoc}
-     *
-     * @see org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase#start(org.osgi.framework.BundleContext)
-     */
-    @Override
-    public void start(BundleContext context) throws Exception {
-        super.start(context);
-
-        createDefaultConfig();
-
-        InvoicePluginApi plugin = createPlugin();
-
-        registerInvoicePluginApi(context, plugin);
     }
 
     /**
