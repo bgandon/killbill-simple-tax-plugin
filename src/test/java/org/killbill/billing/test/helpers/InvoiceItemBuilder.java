@@ -34,9 +34,14 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
     private InvoiceItemType type;
     private LocalDate startDate, endDate;
     private BigDecimal amount;
+    private String planName;
     private Promise<InvoiceItem> linkedItem;
 
     private Promise<InvoiceItem> builtItemHolder;
+
+    public static InvoiceItemBuilder item() {
+        return new InvoiceItemBuilder();
+    }
 
     @Override
     public InvoiceItem build() {
@@ -46,7 +51,7 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
         String description = type == null ? null : "Test " + type.name();
         UUID linkedItemId = linkedItem == null ? null : linkedItem.get().getId();
         PluginInvoiceItem item = new PluginInvoiceItem(id, type, invoiceId, accountId, startDate, endDate, amount, EUR,
-                description, null, null, null, null, null, linkedItemId, null, null, null);
+                description, null, null, planName, null, null, linkedItemId, null, null, null);
         if (builtItemHolder != null) {
             builtItemHolder.resolve(item);
         }
@@ -75,6 +80,11 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
 
     public InvoiceItemBuilder withAmount(BigDecimal amount) {
         this.amount = amount;
+        return this;
+    }
+
+    public InvoiceItemBuilder withPlanName(String planName) {
+        this.planName = planName;
         return this;
     }
 

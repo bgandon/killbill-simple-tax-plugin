@@ -93,7 +93,7 @@ public class TaxCode {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().appendSuper(super.hashCode())//
+        return new HashCodeBuilder()//
                 .append(name)//
                 .append(taxItemDescription)//
                 // Custom processing BigDecimal hash ignoring scale

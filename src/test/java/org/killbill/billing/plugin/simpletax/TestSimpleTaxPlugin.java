@@ -35,6 +35,7 @@ import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
+import static org.killbill.billing.test.helpers.Promise.holder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -108,12 +109,9 @@ public class TestSimpleTaxPlugin {
     private Account account;
     private Invoice invoiceA, invoiceB, invoiceC, invoiceD, invoiceE;
 
-    private Promise<InvoiceItem> tax1 = new Promise<InvoiceItem>();
-    private Promise<InvoiceItem> taxableA = new Promise<InvoiceItem>(),//
-            taxableB = new Promise<InvoiceItem>(),//
-            taxableC = new Promise<InvoiceItem>(),//
-            taxableD = new Promise<InvoiceItem>(),//
-            taxableE = new Promise<InvoiceItem>();
+    private Promise<InvoiceItem> tax1 = holder();
+    private Promise<InvoiceItem> taxableA = holder(), taxableB = holder(),//
+            taxableC = holder(), taxableD = holder(), taxableE = holder();
 
     private List<CustomField> taxFields = newArrayList();
 

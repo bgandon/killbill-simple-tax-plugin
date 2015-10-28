@@ -26,8 +26,22 @@ import static com.google.common.base.Preconditions.checkState;
  *            The type of the object that is promised.
  */
 public class Promise<T> {
-    boolean isSet = false;
-    T value;
+
+    private boolean isSet = false;
+    private T value;
+
+    /**
+     * Shortcut factory method.
+     *
+     * @return A new promise instance.
+     */
+    public static <T> Promise<T> holder() {
+        return new Promise<T>();
+    }
+
+    private Promise() {
+        super();
+    }
 
     /**
      * Resolve the promise with the given instance.

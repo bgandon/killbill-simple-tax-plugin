@@ -57,9 +57,9 @@ public class TestNullTaxResolver {
         InvoiceItem mockItem = mock(InvoiceItem.class);
         ImmutableSet<TaxCode> oneApplicableTaxCode = ImmutableSet.<TaxCode> of(new TaxCodeBuilder().build());
         InvoiceItem itemWithDates = new InvoiceItemBuilder()//
-        .withStartDate(yesterday)//
-        .withEndDate(today)//
-        .build();
+                .withStartDate(yesterday)//
+                .withEndDate(today)//
+                .build();
 
         // Expect
         assertNull(resolver.applicableCodeForItem(null, null));

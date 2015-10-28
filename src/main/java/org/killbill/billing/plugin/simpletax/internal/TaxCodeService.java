@@ -92,6 +92,8 @@ public class TaxCodeService {
     public SetMultimap<UUID, TaxCode> resolveTaxCodesFromConfig(Invoice invoice) {
         ImmutableSetMultimap.Builder<UUID, TaxCode> taxCodesOfInvoiceItems = ImmutableSetMultimap.builder();
 
+        // This lazy map helps us in building a cache for the values we've
+        // already met, and allows us an easy-to-understand syntax below.
         Map<String, Product> productOfPlanName = lazyMap(new HashMap<String, Product>(),
                 new Transformer<String, Product>() {
                     @Override
@@ -141,9 +143,7 @@ public class TaxCodeService {
     @Nonnull
     public SetMultimap<UUID, TaxCode> findExistingTaxCodes(Invoice invoice) {
         Set<CustomField> taxFields = taxFieldsOfInvoices.get(invoice.getId());
-        if (taxFields == null) {
-            return ImmutableSetMultimap.of();
-        }
+        // Note: taxFields is not null, by Multimap contract
 
         ImmutableSetMultimap.Builder<UUID, TaxCode> taxCodesOfInvoiceItems = ImmutableSetMultimap.builder();
         for (CustomField taxField : taxFields) {

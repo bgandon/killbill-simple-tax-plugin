@@ -86,8 +86,7 @@ org.killbill.billing.plugin.simpletax.products.Sport = VAT_2012_20_0%, VAT_2014_
 org.killbill.billing.plugin.simpletax.products.Super = VAT_2012_20_0%, VAT_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.OilSlick = VAT_2012_20_0%, VAT_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_2012_20_0%, VAT_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Gas = VAT_2012_20_0%, VAT_2014_20_0%
-' \
+org.killbill.billing.plugin.simpletax.products.Gas = VAT_2012_20_0%, VAT_2014_20_0%' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
