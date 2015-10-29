@@ -90,15 +90,14 @@ org.killbill.billing.plugin.simpletax.products.Gas = VAT_2012_20_0%, VAT_2014_20
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
-The values above are the default values.
-
 
 Upcoming improvements
 ---------------------
 
 1. Implement conditional taxes, based on account country
-2. Have tax amount scales depend on the currency used
-3. Have i18n for tax items descriptions
+2. Allow editing the VAT numbers attached to accounts
+3. Have the precision of tax amounts depend on the currency used
+4. Have i18n for tax items descriptions
 
 
 Author and License
