@@ -19,6 +19,7 @@ package org.killbill.billing.plugin.simpletax.util;
 import static com.googlecode.catchexception.CatchException.catchException;
 import static com.googlecode.catchexception.CatchException.caughtException;
 import static com.googlecode.catchexception.CatchException.resetCaughtException;
+import static java.lang.Integer.parseInt;
 import static java.lang.Integer.valueOf;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -39,23 +40,30 @@ import org.testng.annotations.Test;
 @SuppressWarnings("javadoc")
 public class TestLazyValue {
 
-    private static LazyValue<Integer, NumberFormatException> delegatingLazyValue(
-            final LazyValue<Integer, NumberFormatException> delegate) {
-        return new LazyValue<Integer, NumberFormatException>() {
-            @Override
-            protected Integer initialize() throws NumberFormatException {
-                return delegate.initialize();
-            }
-        };
+    private static class DelegatingLazyValue extends LazyValue<Integer, NumberFormatException> {
+        private final LazyValue<Integer, NumberFormatException> delegate;
+
+        public DelegatingLazyValue(LazyValue<Integer, NumberFormatException> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected Integer initialize() throws NumberFormatException {
+            return delegate.initialize();
+        }
     }
 
-    private static LazyValue<Integer, NumberFormatException> lazyValue(final String integer) {
-        return new LazyValue<Integer, NumberFormatException>() {
-            @Override
-            protected Integer initialize() throws NumberFormatException {
-                return Integer.parseInt(integer);
-            }
-        };
+    private static class ParseInt extends LazyValue<Integer, NumberFormatException> {
+        private final String integer;
+
+        public ParseInt(String integer) {
+            this.integer = integer;
+        }
+
+        @Override
+        protected Integer initialize() throws NumberFormatException {
+            return parseInt(integer);
+        }
     }
 
     @Test(groups = "fast")
@@ -63,7 +71,7 @@ public class TestLazyValue {
         // Given
         @SuppressWarnings("unchecked")
         LazyValue<Integer, NumberFormatException> delegateMock = mock(LazyValue.class);
-        LazyValue<Integer, NumberFormatException> lazyValue = delegatingLazyValue(delegateMock);
+        LazyValue<Integer, NumberFormatException> lazyValue = new DelegatingLazyValue(delegateMock);
 
         // When
         Object value = lazyValue.get();
@@ -81,7 +89,7 @@ public class TestLazyValue {
         @SuppressWarnings("unchecked")
         LazyValue<Integer, NumberFormatException> delegateMock = mock(LazyValue.class);
         when(delegateMock.initialize()).thenReturn(eleven);
-        LazyValue<Integer, NumberFormatException> lazyValue = delegatingLazyValue(delegateMock);
+        LazyValue<Integer, NumberFormatException> lazyValue = new DelegatingLazyValue(delegateMock);
 
         // When
         Object value = lazyValue.get();
@@ -96,7 +104,7 @@ public class TestLazyValue {
     @Test(groups = "fast")
     public void shouldGetSameValue() {
         // Given
-        LazyValue<Integer, NumberFormatException> lazyValue = lazyValue("10");
+        LazyValue<Integer, NumberFormatException> lazyValue = new ParseInt("10");
 
         // When
         Integer integer = lazyValue.get();
@@ -109,9 +117,9 @@ public class TestLazyValue {
     }
 
     @Test(groups = "fast")
-    public void shouldNotMarkValueInitializedWhenThrowing() {
+    public void shouldNotMarkValueInitializedWhenThrowing() throws Exception {
         // Given
-        LazyValue<Integer, NumberFormatException> value = lazyValue("plop");
+        LazyValue<Integer, NumberFormatException> value = new ParseInt("plop");
 
         // When
         catchException(value).get();
