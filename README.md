@@ -100,6 +100,29 @@ Upcoming improvements
 4. Have i18n for tax items descriptions
 
 
+Building and Installing
+-----------------------
+
+Three Maven profiles are provided to help you build the plugin for various
+versions of Java.
+
+    mvn -P jdk16 clean package install
+    mvn -P jdk17 clean package install
+    mvn -P jdk18 clean package install
+
+Then copy the resulting JAR to `/var/tmp/bundles` or any other value set in
+the `org.killbill.osgi.bundle.install.dir` system property.
+
+```bash
+VERSION=1.0.0-SNAPSHOT
+bundles_dir=/var/tmp/bundles # or any other value set in org.killbill.osgi.bundle.install.dir
+plugin_dir=$bundles_dir/plugins/java/simple-tax-plugin/$VERSION
+mkdir -p $plugin_dir
+cp -v ~/.m2/repository/org/kill-bill/billing/plugin/java/simple-tax-plugin/$VERSION/simple-tax-plugin-$VERSION.jar \
+    $plugin_dir
+```
+
+
 Author and License
 ------------------
 
