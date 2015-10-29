@@ -89,12 +89,8 @@ import com.google.common.collect.SetMultimap;
  * Tax codes that are directly set on invoice items, before this plugin run,
  * take precedence and won't be overridden.
  * <p>
- * No new tax codes are added to historical invoices. Existing tax codes are
- * just used to compute the expected tax amounts, so that missing adjustments
- * get detected and fixed. (If you happen to erroneously add a tax code directly
- * on a taxable item of an historical invoice, the plugin will not take it into
- * consideration because it will detect that the taxable item has never been
- * taxed.)
+ * Tax codes can also be added, removed or changed on historical invoices. The
+ * plugin adds missing taxes or adjusts existing tax items accordingly.
  * <p>
  * Country-specific rules can be implemented by configuring custom
  * {@link TaxResolver} implementations.
@@ -139,13 +135,6 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
     }
 
     /**
-     * @return The clock service to use.
-     */
-    protected Clock getClockService() {
-        return clock;
-    }
-
-    /**
      * Returns additional invoice items to be added to the invoice upon
      * creation, based on the tax codes that have been configured, or directly
      * set on invoice items.
@@ -158,16 +147,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      * the account. Thus, this method also lists any necessary adjustments to
      * any tax items in any historical invoices.
      * <p>
-     * No new tax item is listed for historical invoices. If a taxable item has
-     * not been taxed at the time its invoice was created, the approach here is
-     * to estimate there is a good reason for that.
-     * <p>
-     * If you happen to erroneously add a new tax code to a taxable item of an
-     * historical invoice, it will not be taken into consideration here. The
-     * plugin will just detect that the taxable item has never been taxed.
-     * <p>
-     * If you swap a tax code for an other on an historical invoice, then the
-     * tax amount will be updated accordingly.
+     * Plus, tax codes can be added, changed or removed on historical invoices.
+     * The affected tax amounts will be adjusted accordingly.
      *
      * @param newInvoice
      *            The invoice that is being created.
@@ -179,10 +160,9 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      *            >documentation for payment plugins</a>.
      * @param callCtx
      *            The context in which this code is running.
-     * @return A new immutable list of new tax items (on the invoice being
-     *         created), or adjustments on existing tax items (on any historical
-     *         invoice of the same account). Never {@code null}, and guaranteed
-     *         not having any {@code null} elements.
+     * @return A new immutable list of new tax items, or adjustments on existing
+     *         tax items. Never {@code null}, and guaranteed not having any
+     *         {@code null} elements.
      */
     @Override
     public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, boolean dryRun,
@@ -199,7 +179,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             if (invoice.equals(newInvoice)) {
                 newItems = computeTaxOrAdjustmentItemsForNewInvoice(invoice, taxCtx, newTaxCodes);
             } else {
-                newItems = computeAdjustmentItemsForHistoricalInvoice(invoice, taxCtx);
+                newItems = computeTaxOrAdjustmentItemsForHistoricalInvoice(invoice, taxCtx);
             }
             additionalItems.addAll(newItems);
         }
@@ -389,16 +369,18 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      */
     private TaxResolver instanciateTaxResolver(TaxComputationContext taxCtx) {
         Constructor<? extends TaxResolver> constructor = taxCtx.getConfig().getTaxResolverConstructor();
-        Exception exc;
+        Throwable exc;
         try {
             return constructor.newInstance(taxCtx);
-        } catch (InstantiationException e) {
-            exc = e;
         } catch (IllegalAccessException e) {
             exc = e;
         } catch (IllegalArgumentException e) {
             exc = e;
+        } catch (InstantiationException e) {
+            exc = e;
         } catch (InvocationTargetException e) {
+            exc = e;
+        } catch (ExceptionInInitializerError e) {
             exc = e;
         }
         logService.log(LOG_ERROR, "Cannot instanciate tax resolver. Defaulting to [" + NullTaxResolver.class.getName()
@@ -438,11 +420,13 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
                 continue;
             }
             Set<TaxCode> expectedTaxCodes = configuredTaxCodesForInvoiceItems.get(item.getId());
-            if ((expectedTaxCodes == null) || expectedTaxCodes.isEmpty()) {
+            // Note: expectedTaxCodes != null as per the Multimap contract
+            if (expectedTaxCodes.isEmpty()) {
                 continue;
             }
             Set<TaxCode> existingTaxCodes = existingTaxCodesForInvoiceItems.get(item.getId());
-            if (existingTaxCodes != null) {
+            // Note: existingTaxCodes != null as per the Multimap contract
+            if (!existingTaxCodes.isEmpty()) {
                 // Don't override existing tax codes
                 continue;
             }
@@ -499,12 +483,14 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
                 continue;
             }
 
-            TaxCode tax = newTaxCodes.get(item);
+            TaxCode tax = null;
+            Set<TaxCode> taxes = existingTaxCodes.get(item.getId());
+            // Note: taxes != null as per the Multimap contract
+            if (!taxes.isEmpty()) {
+                tax = taxes.iterator().next();
+            }
             if (tax == null) {
-                Set<TaxCode> taxes = existingTaxCodes.get(item.getId());
-                if ((taxes != null) && !taxes.isEmpty()) {
-                    tax = taxes.iterator().next();
-                }
+                tax = newTaxCodes.get(item.getId());
             }
 
             BigDecimal adjustedAmount = ctx.toAdjustedAmount().apply(item);
@@ -625,6 +611,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             @Nonnull String description) {
         checkArgument(isTaxableItem(taxableItem), "not of a taxable type: %s", taxableItem.getInvoiceItemType());
         if ((taxAmount == null) || (ZERO.compareTo(taxAmount) == 0)) {
+            // This can actually not happen in our current code. We just keep it
+            // because it was taken from the API helper methods.
             return null;
         }
         return createTaxItem(taxableItem, taxableItem.getInvoiceId(), date, null, taxAmount, description);
@@ -662,6 +650,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             @Nullable BigDecimal adjustmentAmount, @Nonnull String description) {
         checkArgument(isTaxItem(taxItemToAdjust), "not a tax type: %s", taxItemToAdjust.getInvoiceItemType());
         if ((adjustmentAmount == null) || (ZERO.compareTo(adjustmentAmount) == 0)) {
+            // This can actually not happen in our current code. We just keep it
+            // because it was taken from the API helper methods.
             return null;
         }
         return createAdjustmentItem(taxItemToAdjust, taxItemToAdjust.getInvoiceId(), date, null, adjustmentAmount,
@@ -672,10 +662,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      * Compute adjustment items on existing tax items in a <em>historical</em>
      * invoice.
      * <p>
-     * No new tax item is added to any historical invoice.
-     * <p>
-     * Only <em>existing</em> tax items might get adjusted. This happens when
-     * their related taxable items have been adjusted.
+     * Tax codes are allowed to change on historical invoice. They can be
+     * removed, changed or added. Then taxes are adjusted or added accordingly.
      *
      * @param oldInvoice
      *            An historical invoice.
@@ -685,7 +673,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      *         invoice. Never {@code null}, and guaranteed not having any
      *         {@code null} elements.
      */
-    private List<InvoiceItem> computeAdjustmentItemsForHistoricalInvoice(Invoice oldInvoice, TaxComputationContext ctx) {
+    private List<InvoiceItem> computeTaxOrAdjustmentItemsForHistoricalInvoice(Invoice oldInvoice,
+            TaxComputationContext ctx) {
 
         SetMultimap<UUID, InvoiceItem> currentTaxItems = taxItemsGroupedByRelatedTaxedItems(oldInvoice);
 
@@ -698,16 +687,11 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             }
 
             Set<InvoiceItem> relatedTaxItems = currentTaxItems.get(item.getId());
-            if (relatedTaxItems.size() <= 0) {
-                // When item has never been taxed in an *historical* invoice,
-                // we cannot take the responsibility here for adding any tax to
-                // it as an afterthought. So we just don't do anything.
-                continue;
-            }
 
             TaxCode tax = null;
             Set<TaxCode> taxes = existingTaxCodes.get(item.getId());
-            if ((taxes != null) && !taxes.isEmpty()) {
+            // Note: taxes != null as per the Multimap contract
+            if (!taxes.isEmpty()) {
                 tax = taxes.iterator().next();
             }
 
@@ -717,11 +701,25 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
             if (currentTaxAmount.compareTo(expectedTaxAmount) != 0) {
                 BigDecimal adjustmentAmount = expectedTaxAmount.subtract(currentTaxAmount);
-                InvoiceItem largestTaxItem = ctx.byAdjustedAmount().max(relatedTaxItems);
 
-                InvoiceItem adjItem = buildAdjustmentForTaxItem(largestTaxItem, oldInvoice.getInvoiceDate(),
-                        adjustmentAmount, tax.getTaxItemDescription());
-                newItems.add(adjItem);
+                if (relatedTaxItems.isEmpty()) {
+                    // Here tax != null because with relatedTaxItem == null we
+                    // necessarily have a zero currentTaxAmount, so
+                    // expectedTaxAmount is not zero and necessarily results
+                    // from a tax code
+                    InvoiceItem taxItem = buildTaxItem(item, oldInvoice.getInvoiceDate(), adjustmentAmount,
+                            tax.getTaxItemDescription());
+                    newItems.add(taxItem);
+                } else {
+                    // here we have a tax item but the tax code might have been
+                    // removed, so it could be null
+                    InvoiceItem largestTaxItem = ctx.byAdjustedAmount().max(relatedTaxItems);
+                    String taxItemDescription = tax != null ? tax.getTaxItemDescription() : largestTaxItem
+                            .getDescription();
+                    InvoiceItem adjItem = buildAdjustmentForTaxItem(largestTaxItem, oldInvoice.getInvoiceDate(),
+                            adjustmentAmount, taxItemDescription);
+                    newItems.add(adjItem);
+                }
             }
         }
         return newItems.build();

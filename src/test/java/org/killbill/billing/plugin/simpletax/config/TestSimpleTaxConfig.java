@@ -64,7 +64,7 @@ import com.google.common.collect.ImmutableSet;
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxConfig {
 
-    private static final String TAX_RESOLVER_PROP = "org.killbill.billing.plugin.simpletax.taxResolver";
+    public static final String TAX_RESOLVER_PROP = "org.killbill.billing.plugin.simpletax.taxResolver";
 
     private static final LazyValue<Constructor<NullTaxResolver>, RuntimeException> NTR_CONSTRUCTOR = new LazyValue<Constructor<NullTaxResolver>, RuntimeException>() {
         @Override

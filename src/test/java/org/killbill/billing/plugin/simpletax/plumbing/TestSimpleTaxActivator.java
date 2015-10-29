@@ -17,13 +17,11 @@
 package org.killbill.billing.plugin.simpletax.plumbing;
 
 import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.RETURNS_SMART_NULLS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -37,8 +35,6 @@ import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockSettings;
-import org.mockito.internal.stubbing.defaultanswers.ReturnsMoreEmptyValues;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
@@ -53,18 +49,12 @@ import org.testng.annotations.Test;
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxActivator {
 
-    private static final ReturnsMoreEmptyValues RETURNS_MORE_EMPTY_VALUES = new ReturnsMoreEmptyValues();
-    private static final MockSettings RETURNING_MORE_EMPTY_VALUES = withSettings().defaultAnswer(
-            RETURNS_MORE_EMPTY_VALUES);
-
-    private static final MockSettings RETURNING_SMART_NULLS = withSettings().defaultAnswer(RETURNS_SMART_NULLS);
-    private static final MockSettings RETURNING_DEEP_STUBS = withSettings().defaultAnswer(RETURNS_DEEP_STUBS);
-
     @Mock
     private BundleContext context;
 
     private Observable observableService = new Observable();
-    private OSGIConfigProperties configPropsService = mock(OSGIConfigProperties.class, RETURNING_DEEP_STUBS);
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private OSGIConfigProperties configPropsService;
 
     private SimpleTaxActivator activator = new SimpleTaxActivator();
 
@@ -83,6 +73,7 @@ public class TestSimpleTaxActivator {
 
     /** Helper method that mocks an OSGi service. */
     private <S> void mockService(Class<S> clazz, S serviceInstance) throws InvalidSyntaxException {
+        @SuppressWarnings("unchecked")
         ServiceReference<S> serviceRef = mock(ServiceReference.class);
         when(context.getServiceReferences(clazz.getName(), null)).thenReturn(new ServiceReference<?>[] { serviceRef });
         when(context.getService(serviceRef)).thenReturn(serviceInstance);
