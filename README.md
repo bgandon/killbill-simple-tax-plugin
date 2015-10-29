@@ -21,10 +21,13 @@ tax codes with  fixed tax rates and cut-off dates. Tax codes can be associated
 to products of the Kill Bill catalog, or specifically set on invoice items.
 
 Taxable invoice items then get properly taxed, with the applicable rate, as
-specified in tax codes.
+specified in tax codes. Regulation-specific rules can be adapted with custom
+implementations of the [TaxResolver](https://github.com/bgandon/killbill-simple-tax-plugin/blob/master/src/main/java/org/killbill/billing/plugin/simpletax/resolving/TaxResolver.java)
+interface.
 
-The typical use case for this plugin is a regulatory requirement for a fixed
-[VAT](https://en.wikipedia.org/wiki/Value-added_tax) rate.
+The typical use case for this plugin is a regulatory requirement for a bunch
+of fixed [VAT](https://en.wikipedia.org/wiki/Value-added_tax) rates that can
+change once in a while.
 
 
 Configuration
