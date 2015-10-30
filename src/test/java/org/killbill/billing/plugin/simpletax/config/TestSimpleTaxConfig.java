@@ -124,7 +124,7 @@ public class TestSimpleTaxConfig {
     }
 
     @Test(groups = "fast")
-    public void shouldEarlyWarnOnMissingtaxResolver() {
+    public void shouldEarlyWarnOnMissingTaxResolver() {
         // When
         SimpleTaxConfig config = new SimpleTaxConfig(ImmutableMap.<String, String> of(), logService);
 

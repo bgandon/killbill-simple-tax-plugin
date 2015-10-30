@@ -132,8 +132,6 @@ public class TestSimpleTaxPlugin {
     private List<PluginProperty> properties = ImmutableList.<PluginProperty> of();
     @Mock
     private CallContext context;
-    // new PluginCallContext("killbill-simple-tax", new DateTime(),
-    // randomUUID());
 
     @Mock
     private InvoiceUserApi invoiceUserApi;
@@ -142,7 +140,6 @@ public class TestSimpleTaxPlugin {
     @Mock
     private CustomFieldUserApi customFieldUserApi;
     @Mock
-    // (answer = RETURNS_DEEP_STUBS)
     private CatalogUserApi catalogUserApi;
 
     private OSGIKillbillAPI services;
@@ -535,7 +532,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldAlowEmptyListOfCustomFields() throws Exception {
+    public void shouldAllowEmptyListOfCustomFields() throws Exception {
         // Given
         Account accountNoCustomFields = buildAccount(EUR, "FR");
         UUID accountId = accountNoCustomFields.getId();
@@ -557,7 +554,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldAlowNonTaxRelatedCustomFields() throws Exception {
+    public void shouldAllowNonTaxRelatedCustomFields() throws Exception {
         // Given
         Account accountNonTaxFields = buildAccount(EUR, "FR");
         UUID accountId = accountNonTaxFields.getId();

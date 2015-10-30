@@ -611,6 +611,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      * @throws IllegalArgumentException
      *             if {@code taxableItem} is not {@linkplain #isTaxableItem of a
      *             taxable type}.
+     * @see org.killbill.billing.plugin.api.invoice.PluginTaxCalculator#buildTaxItem
      */
     private InvoiceItem buildTaxItem(InvoiceItem taxableItem, LocalDate date, BigDecimal taxAmount,
             @Nonnull String description) {
