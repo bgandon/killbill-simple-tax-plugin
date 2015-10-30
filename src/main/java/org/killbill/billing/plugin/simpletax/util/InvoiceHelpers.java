@@ -33,7 +33,9 @@ import com.google.common.collect.Multimap;
  *
  * @author Benjamin Gandon
  */
-public abstract class InvoiceHelpers {
+public final class InvoiceHelpers {
+    private InvoiceHelpers() {
+    }
 
     /**
      * Utility method that computes the amount of a given

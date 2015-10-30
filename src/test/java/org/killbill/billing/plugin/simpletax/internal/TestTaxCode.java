@@ -46,6 +46,7 @@ public class TestTaxCode {
             .withRate(new BigDecimal("0.06713"))//
             .withStartingOn(yesterday)//
             .withStoppingOn(today)//
+            .withCountry(new Country("FR"))//
             .build();
 
     @Test(groups = "fast")
@@ -97,7 +98,7 @@ public class TestTaxCode {
     @Test(groups = "fast")
     public void shouldComputeHashCode() {
         // Expect
-        assertEquals(taxTT.hashCode(), -496492379);
+        assertEquals(taxTT.hashCode(), -1190345958);
     }
 
     @Test(groups = "fast")
@@ -108,7 +109,8 @@ public class TestTaxCode {
                 + "taxItemDescription=titi,"//
                 + "rate=0.06713,"//
                 + "startingOn=2015-10-25,"//
-                + "stoppingOn=2015-10-26]");
+                + "stoppingOn=2015-10-26,"//
+                + "country=" + TestUtil.shortIdentityToString(taxTT.getCountry()) + "[code=FR]]");
     }
 
     @Test(groups = "fast")
@@ -119,5 +121,6 @@ public class TestTaxCode {
         assertEquals(taxTT.getRate(), new BigDecimal("0.06713"));
         assertEquals(taxTT.getStartingOn(), new LocalDate("2015-10-25"));
         assertEquals(taxTT.getStoppingOn(), new LocalDate("2015-10-26"));
+        assertEquals(taxTT.getCountry(), new Country("FR"));
     }
 }

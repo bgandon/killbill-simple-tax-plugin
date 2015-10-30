@@ -38,8 +38,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTimeZone;
-import org.killbill.billing.invoice.api.InvoiceItem;
+import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
@@ -93,7 +94,10 @@ public class TestSimpleTaxConfig {
             "org.killbill.billing.plugin.simpletax.taxCodes.taxB", "");
     private static final Map<String, String> WITH_TAX_CODE_C = ImmutableMap.of(
             "org.killbill.billing.plugin.simpletax.taxCodes.taxC.rate", "0.200",
-            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.taxItem.description", "Tax C");
+            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.taxItem.description", "Tax C",
+            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.startingOn", "1985-10-25",
+            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.stoppingOn", "2015-10-25",
+            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.country", "FR");
     private static final ImmutableMap<String, String> WITH_PRODUCT_A = ImmutableMap.of(
             "org.killbill.billing.plugin.simpletax.products.productA", "plop, taxA");
     private static final ImmutableMap<String, String> WITH_PRODUCT_B = ImmutableMap.of(
@@ -113,6 +117,9 @@ public class TestSimpleTaxConfig {
             .withName("taxC")//
             .withRate(new BigDecimal("0.2"))//
             .withTaxItemDescription("Tax C")//
+            .withStartingOn(new LocalDate("1985-10-25"))//
+            .withStoppingOn(new LocalDate("2015-10-25"))//
+            .withCountry(new Country("FR"))//
             .build();
 
     @Mock
@@ -207,7 +214,7 @@ public class TestSimpleTaxConfig {
     }
 
     @Test(groups = "fast")
-    public void shouldDefineTaxCode() {
+    public void shouldDefineTaxCodeWithAllProperties() {
         // Given
         Map<String, String> cfg = cfgBuilder()//
                 .putAll(WITH_NOOP_TAX_RESOLVER)//

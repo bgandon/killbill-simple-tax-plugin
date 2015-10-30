@@ -31,6 +31,7 @@ import static org.killbill.billing.ErrorCode.UNEXPECTED_ERROR;
 import static org.killbill.billing.ErrorCode.__UNKNOWN_ERROR_CODE;
 import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.catalog.api.Currency.EUR;
+import static org.killbill.billing.catalog.api.Currency.USD;
 import static org.killbill.billing.invoice.api.InvoiceItemType.EXTERNAL_CHARGE;
 import static org.killbill.billing.invoice.api.InvoiceItemType.ITEM_ADJ;
 import static org.killbill.billing.invoice.api.InvoiceItemType.RECURRING;
@@ -49,8 +50,10 @@ import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -186,6 +189,7 @@ public class TestSimpleTaxPlugin {
         String taxCode = "VAT_20_0%";
         cfg.put(pfx + "taxCodes." + taxCode + ".taxItem.description", "Test VAT");
         cfg.put(pfx + "taxCodes." + taxCode + ".rate", "0.20");
+        cfg.put(pfx + "taxCodes." + taxCode + ".country", "FR");
         cfg.put(pfx + "products.planA-product", "VAT_20_0%");
 
         plugin = pluginForConfig(cfg.build());
@@ -691,6 +695,35 @@ public class TestSimpleTaxPlugin {
         assertEquals(customField.getObjectId(), taxableF.get().getId());
         assertEquals(customField.getFieldName(), "taxCodes");
         assertEquals(customField.getFieldValue(), "VAT_20_0%");
+    }
+
+    @Test(groups = "fast")
+    public void shouldFilterOutTaxCodesOnIrrelevantCountries() throws Exception {
+        // Given
+        CallContext context = mock(CallContext.class);
+        initCatalogStub();
+
+        Account account = buildAccount(USD, "US");
+        when(accountUserApi.getAccountById(eq(account.getId()), eq(context))).thenReturn(account);
+
+        Promise<InvoiceItem> taxable = holder();
+        Invoice newInvoice = new InvoiceBuilder(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(RECURRING).withPlanName("planA").withAmount(SIX)//
+                        .withStartDate(lastMonth).withEndDate(today)//
+                        .thenSaveTo(taxable))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(ITEM_ADJ).withLinkedItem(taxable).withAmount(ONE.negate()))//
+                .build();
+        withInvoices(newInvoice);
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+
+        verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
     }
 
     @Test(groups = "fast")

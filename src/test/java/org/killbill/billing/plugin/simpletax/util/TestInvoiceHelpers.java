@@ -56,17 +56,17 @@ public class TestInvoiceHelpers {
     @BeforeClass
     public void init() {
         itemA = new InvoiceItemBuilder()//
-        .withAmount(TEN)//
-        .build();
+                .withAmount(TEN)//
+                .build();
         itemB = new InvoiceItemBuilder()//
-        .withAmount(null)//
-        .build();
+                .withAmount(null)//
+                .build();
         itemC = new InvoiceItemBuilder()//
-        .withAmount(ONE)//
-        .build();
+                .withAmount(ONE)//
+                .build();
         itemD = new InvoiceItemBuilder()//
-        .withAmount(ONE.negate())//
-        .build();
+                .withAmount(ONE.negate())//
+                .build();
     }
 
     /** Helper assert that ignores {@linkplain BigDecimal#scale() scales}. */
@@ -74,9 +74,9 @@ public class TestInvoiceHelpers {
         assertEqualsIgnoreScale(actual, expected);
     }
 
-    @Test(groups = "fast", expectedExceptions = InstantiationException.class)
+    @Test(groups = "fast", expectedExceptions = IllegalAccessException.class)
     public void shouldBeAbstractClass() throws Exception {
-        InvoiceHelpers.class.getConstructor().newInstance();
+        InvoiceHelpers.class.getDeclaredConstructor().newInstance();
     }
 
     @Test(groups = "fast")

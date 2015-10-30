@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.StringUtils.indexOf;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.startsWith;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.country;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.resolverConstructor;
@@ -44,6 +45,7 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
@@ -133,6 +135,7 @@ public class SimpleTaxConfig {
     private static final String RATE_SUFFIX = ".rate";
     private static final String STARTING_ON_SUFFIX = ".startingOn";
     private static final String STOPPING_ON_SUFFIX = ".stoppingOn";
+    private static final String COUNTRY_SUFFIX = ".country";
 
     /**
      * The default description for
@@ -272,7 +275,8 @@ public class SimpleTaxConfig {
             BigDecimal rate = bigDecimal(cfg, prefix + RATE_SUFFIX, DEFAULT_TAX_RATE);
             LocalDate startingOn = localDate(cfg, prefix + STARTING_ON_SUFFIX, null);
             LocalDate stoppingOn = localDate(cfg, prefix + STOPPING_ON_SUFFIX, null);
-            codes.put(name, new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn));
+            Country country = country(cfg, prefix + COUNTRY_SUFFIX, null);
+            codes.put(name, new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, country));
         }
         return codes.build();
     }

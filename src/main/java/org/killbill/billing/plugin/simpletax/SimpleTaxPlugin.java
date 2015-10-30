@@ -18,6 +18,7 @@ package org.killbill.billing.plugin.simpletax;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSetMultimap.builder;
+import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newHashMap;
@@ -53,6 +54,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
@@ -71,6 +73,7 @@ import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -410,7 +413,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      *         guaranteed not having any {@code null} elements.
      */
     private Map<UUID, TaxCode> addMissingTaxCodes(Invoice newInvoice, TaxResolver resolver,
-            TaxComputationContext taxCtx, CallContext callCtx) {
+            final TaxComputationContext taxCtx, CallContext callCtx) {
         // Obtain tax codes from products of invoice items
         TaxCodeService taxCodesService = taxCtx.getTaxCodeService();
         SetMultimap<UUID, TaxCode> configuredTaxCodesForInvoiceItems = taxCodesService
@@ -436,8 +439,18 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
                 continue;
             }
 
+            Iterable<TaxCode> expectedInAccountCountry = filter(expectedTaxCodes, new Predicate<TaxCode>() {
+                @Override
+                public boolean apply(TaxCode taxCode) {
+                    Country restrict = taxCode.getCountry();
+                    return (restrict == null) || restrict.getCode().equals(taxCtx.getAccount().getCountry());
+                }
+            });
             // resolve tax codes using regulation-specific logic
-            TaxCode applicableCode = resolver.applicableCodeForItem(expectedTaxCodes, item);
+            TaxCode applicableCode = resolver.applicableCodeForItem(expectedInAccountCountry, item);
+            if (applicableCode == null) {
+                continue;
+            }
 
             CustomFieldUserApi customFieldsService = services().getCustomFieldUserApi();
             ImmutableCustomField.Builder taxCodesField = ImmutableCustomField.builder()//

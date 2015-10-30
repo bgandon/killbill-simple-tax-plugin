@@ -16,8 +16,6 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving;
 
-import java.util.Set;
-
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
@@ -41,7 +39,7 @@ public class NullTaxResolver implements TaxResolver {
     }
 
     @Override
-    public TaxCode applicableCodeForItem(Set<TaxCode> taxCodes, InvoiceItem item) {
+    public TaxCode applicableCodeForItem(Iterable<TaxCode> taxCodes, InvoiceItem item) {
         return null;
     }
 }

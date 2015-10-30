@@ -16,8 +16,6 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving;
 
-import java.util.Set;
-
 import javax.annotation.Nullable;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
@@ -42,9 +40,10 @@ public interface TaxResolver {
      *            The candidate tax codes for this invoice item.
      * @param item
      *            The invoice item to tax.
-     * @return The tax code to apply to this item.
+     * @return The tax code to apply to this item, or {@code null} if none
+     *         applies.
      */
     @Nullable
-    public abstract TaxCode applicableCodeForItem(Set<TaxCode> taxCodes, InvoiceItem item);
+    public abstract TaxCode applicableCodeForItem(Iterable<TaxCode> taxCodes, InvoiceItem item);
 
 }

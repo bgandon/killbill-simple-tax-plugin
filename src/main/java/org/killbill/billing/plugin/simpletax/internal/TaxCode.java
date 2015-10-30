@@ -39,6 +39,7 @@ public class TaxCode {
     private BigDecimal rate;
     private LocalDate startingOn;
     private LocalDate stoppingOn;
+    private Country country;
 
     /**
      * constructs a new tax code definition.
@@ -52,18 +53,24 @@ public class TaxCode {
      *            The tax rate to apply when computing tax amounts.
      * @param startingOn
      *            The first day on which the tax code will <em>start</em> being
-     *            applicable.
+     *            applicable, or {@code null} if the tax code has no sunrise
+     *            date.
      * @param stoppingOn
      *            The first day on which this tax code will <em>cease</em> to be
-     *            applicable.
+     *            applicable, or {@code null} if the tax code has no sunset
+     *            date.
+     * @param country
+     *            The country on which this tax code applies.
      */
-    public TaxCode(String name, String taxItemDescription, BigDecimal rate, LocalDate startingOn, LocalDate stoppingOn) {
+    public TaxCode(String name, String taxItemDescription, BigDecimal rate, LocalDate startingOn, LocalDate stoppingOn,
+            Country country) {
         super();
         this.name = name;
         this.taxItemDescription = taxItemDescription;
         this.rate = rate;
         this.startingOn = startingOn;
         this.stoppingOn = stoppingOn;
+        this.country = country;
     }
 
     @Override
@@ -83,6 +90,7 @@ public class TaxCode {
                 .append(taxItemDescription, rhs.taxItemDescription)//
                 .append(startingOn, rhs.startingOn)//
                 .append(stoppingOn, rhs.stoppingOn)//
+                .append(country, rhs.country)//
                 .isEquals()) {
             return false;
         }
@@ -102,6 +110,7 @@ public class TaxCode {
                 .append(rate == null ? 0 : rate.toString())//
                 .append(startingOn)//
                 .append(stoppingOn)//
+                .append(country)//
                 .toHashCode();
     }
 
@@ -113,6 +122,7 @@ public class TaxCode {
                 .append("rate", rate)//
                 .append("startingOn", startingOn)//
                 .append("stoppingOn", stoppingOn)//
+                .append("country", country)//
                 .toString();
     }
 
@@ -152,5 +162,12 @@ public class TaxCode {
      */
     public LocalDate getStoppingOn() {
         return stoppingOn;
+    }
+
+    /**
+     * @return The country on which this tax code applies.
+     */
+    public Country getCountry() {
+        return country;
     }
 }

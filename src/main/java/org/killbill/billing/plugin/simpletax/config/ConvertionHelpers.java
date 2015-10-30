@@ -38,6 +38,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 
@@ -250,6 +251,33 @@ public abstract class ConvertionHelpers {
             return TIME_ZONE_PARSER.parseDateTime(trim(timeZone)).getZone();
         } catch (IllegalArgumentException e) {
             return defaultTimeZone;
+        }
+    }
+
+    /**
+     * Constructs a new {@link Country} instance from a configuration property,
+     * or return a default value when the property is blank or inexistent.
+     *
+     * @param cfg
+     *            The plugin configuration properties.
+     * @param propName
+     *            The property name.
+     * @param defaultCountry
+     *            The default value.
+     * @return A new {@link Country} instance reflecting the designated
+     *         configuration property, or the given default value.
+     * @throws NullPointerException
+     *             When {@code cfg} is {@code null}.
+     */
+    static Country country(Map<String, String> cfg, String propName, Country defaultCountry) {
+        String countryCode = cfg.get(propName);
+        if (isBlank(countryCode)) {
+            return defaultCountry;
+        }
+        try {
+            return new Country(countryCode);
+        } catch (IllegalArgumentException e) {
+            return defaultCountry;
         }
     }
 
