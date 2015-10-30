@@ -369,22 +369,27 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      */
     private TaxResolver instanciateTaxResolver(TaxComputationContext taxCtx) {
         Constructor<? extends TaxResolver> constructor = taxCtx.getConfig().getTaxResolverConstructor();
-        Throwable exc;
+        Throwable issue;
         try {
             return constructor.newInstance(taxCtx);
-        } catch (IllegalAccessException e) {
-            exc = e;
-        } catch (IllegalArgumentException e) {
-            exc = e;
-        } catch (InstantiationException e) {
-            exc = e;
-        } catch (InvocationTargetException e) {
-            exc = e;
-        } catch (ExceptionInInitializerError e) {
-            exc = e;
+        } catch (IllegalAccessException shouldNeverHappen) {
+            // This should not happen because we are supposed to deal with a
+            // public constructor by SimpleTaxConfig contract. Let it crash.
+            throw new RuntimeException(shouldNeverHappen);
+        } catch (IllegalArgumentException shouldNeverHappen) {
+            // This should not happen because by SimpleTaxConfig contract, we
+            // are supposed to deal with a constructor that accepts the expected
+            // arguments types. Let it crash.
+            throw shouldNeverHappen;
+        } catch (InstantiationException exc) {
+            issue = exc;
+        } catch (InvocationTargetException exc) {
+            issue = exc;
+        } catch (ExceptionInInitializerError err) {
+            issue = err;
         }
         logService.log(LOG_ERROR, "Cannot instanciate tax resolver. Defaulting to [" + NullTaxResolver.class.getName()
-                + "].", exc);
+                + "].", issue);
         return new NullTaxResolver(taxCtx);
     }
 

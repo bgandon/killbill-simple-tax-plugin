@@ -60,6 +60,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,8 @@ import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.AbstractTaxResolver;
+import org.killbill.billing.plugin.simpletax.resolving.fixtures.InitFailingTaxResolver;
+import org.killbill.billing.plugin.simpletax.resolving.fixtures.InvalidConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.PrivateConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.ThrowingTaxResolver;
 import org.killbill.billing.tenant.api.TenantUserApi;
@@ -578,20 +581,30 @@ public class TestSimpleTaxPlugin {
         assertEquals(items.size(), 0);
     }
 
-    /** FIXME: this does not throw any IllegalAccessException as expected. */
     @Test(groups = "fast")
-    public void shouldSurviveIllegalAccessException() {
+    public void shouldSurviveIllegalTaxResolverWithPrivateConstructor() {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, PrivateConstructorTaxResolver.class.getName()));
         withInvoices(invoiceE);
 
-        // Expect
+        // Expect no exception
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
     }
 
     @Test(groups = "fast")
-    public void shouldSurviveInstantiationException() {
+    public void shouldSurviveIllegalTaxResolverWithConstructorAcceptingIncorrectArguments() {
+        // Given
+        SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
+                TAX_RESOLVER_PROP, InvalidConstructorTaxResolver.class.getName()));
+        withInvoices(invoiceE);
+
+        // Expect no exception
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+    }
+
+    @Test(groups = "fast")
+    public void shouldComplainForInstantiationExceptionAtTaxResolverInstanciation() {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, AbstractTaxResolver.class.getName()));
@@ -599,10 +612,12 @@ public class TestSimpleTaxPlugin {
 
         // Expect
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+                isA(InstantiationException.class));
     }
 
     @Test(groups = "fast")
-    public void shouldSurviveInvocationTargetException() {
+    public void shouldComplainForInvocationTargetExceptionAtTaxResolverInstanciation() {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, ThrowingTaxResolver.class.getName()));
@@ -610,6 +625,21 @@ public class TestSimpleTaxPlugin {
 
         // Expect
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+                isA(InvocationTargetException.class));
+    }
+
+    @Test(groups = "fast")
+    public void shouldComplainForExceptionInInitializerErrorAtTaxResolverInstanciation() {
+        // Given
+        SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
+                TAX_RESOLVER_PROP, InitFailingTaxResolver.class.getName()));
+        withInvoices(invoiceE);
+
+        // Expect
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+                isA(ExceptionInInitializerError.class));
     }
 
     @Test(groups = "fast")

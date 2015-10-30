@@ -16,19 +16,32 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving.fixtures;
 
-import java.util.Set;
+import java.math.BigDecimal;
 
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
+import org.killbill.billing.test.helpers.TaxCodeBuilder;
 
+/**
+ * @author Benjamin Gandon
+ */
+@SuppressWarnings("javadoc")
 public abstract class AbstractTaxResolver implements TaxResolver {
+
+    protected static final TaxCode TAX_CODE = new TaxCodeBuilder().withRate(new BigDecimal("0.0314")).build();
+
     public AbstractTaxResolver(TaxComputationContext ctx) {
     }
 
+    /**
+     * We return a non-zero tax rate here in order to differentiate the tax
+     * resolvers of this hierarchy from the {@link NullTaxResolver}.
+     */
     @Override
-    public TaxCode applicableCodeForItem(Set<TaxCode> taxCodes, InvoiceItem item) {
-        return null;
+    public TaxCode applicableCodeForItem(Iterable<TaxCode> taxCodes, InvoiceItem item) {
+        return TAX_CODE;
     }
 }

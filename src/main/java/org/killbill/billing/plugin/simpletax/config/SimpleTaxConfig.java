@@ -309,8 +309,9 @@ public class SimpleTaxConfig {
     /**
      * A factory for building the configured {@link TaxResolver} implementation.
      *
-     * @return The constructor to use when building the applicable
-     *         {@linkplain TaxResolver tax resolver}. Never {@code null}.
+     * @return The <em>public</em> constructor to use when building the
+     *         applicable {@linkplain TaxResolver tax resolver}. Never
+     *         {@code null}.
      */
     @Nonnull
     public Constructor<? extends TaxResolver> getTaxResolverConstructor() {

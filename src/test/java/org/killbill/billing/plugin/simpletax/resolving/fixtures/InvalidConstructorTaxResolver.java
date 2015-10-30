@@ -16,16 +16,13 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving.fixtures;
 
-import org.killbill.billing.plugin.simpletax.TaxComputationContext;
-
 /**
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")
-public class ThrowingTaxResolver extends AbstractTaxResolver {
+public class InvalidConstructorTaxResolver extends AbstractTaxResolver {
 
-    public ThrowingTaxResolver(TaxComputationContext ctx) {
-        super(ctx);
-        throw new RuntimeException();
+    public InvalidConstructorTaxResolver() {
+        super(null);
     }
 }

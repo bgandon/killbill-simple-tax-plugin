@@ -22,10 +22,17 @@ import org.killbill.billing.plugin.simpletax.TaxComputationContext;
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")
-public class ThrowingTaxResolver extends AbstractTaxResolver {
+public class InitFailingTaxResolver extends AbstractTaxResolver {
 
-    public ThrowingTaxResolver(TaxComputationContext ctx) {
-        super(ctx);
+    static {
+        boom();
+    }
+
+    private static void boom() {
         throw new RuntimeException();
+    }
+
+    public InitFailingTaxResolver(TaxComputationContext ctx) {
+        super(ctx);
     }
 }

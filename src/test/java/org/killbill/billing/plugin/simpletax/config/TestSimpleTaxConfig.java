@@ -44,6 +44,7 @@ import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
+import org.killbill.billing.plugin.simpletax.resolving.fixtures.InvalidConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.util.LazyValue;
 import org.killbill.billing.test.helpers.TaxCodeBuilder;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
@@ -82,7 +83,7 @@ public class TestSimpleTaxConfig {
     private static final ImmutableMap<String, String> WITH_INVALID_TAX_RSOLVER_SUBTYPE = ImmutableMap.of(
             TAX_RESOLVER_PROP, TestSimpleTaxConfig.class.getName());
     private static final ImmutableMap<String, String> WITH_INVALID_TAX_RESOLVER_CONSTRUCTOR = ImmutableMap.of(
-            TAX_RESOLVER_PROP, InvalidTaxResolver.class.getName());
+            TAX_RESOLVER_PROP, InvalidConstructorTaxResolver.class.getName());
     private static final Map<String, String> WITH_NOOP_TAX_RESOLVER = ImmutableMap.of(TAX_RESOLVER_PROP,
             NullTaxResolver.class.getName());
 
@@ -113,13 +114,6 @@ public class TestSimpleTaxConfig {
             .withRate(new BigDecimal("0.2"))//
             .withTaxItemDescription("Tax C")//
             .build();
-
-    private static class InvalidTaxResolver implements TaxResolver {
-        @Override
-        public TaxCode applicableCodeForItem(Set<TaxCode> taxCodes, InvoiceItem item) {
-            return null;
-        }
-    }
 
     @Mock
     private OSGIKillbillLogService logService;
