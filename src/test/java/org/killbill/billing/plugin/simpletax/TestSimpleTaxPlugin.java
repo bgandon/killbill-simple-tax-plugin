@@ -37,7 +37,6 @@ import static org.killbill.billing.invoice.api.InvoiceItemType.ITEM_ADJ;
 import static org.killbill.billing.invoice.api.InvoiceItemType.RECURRING;
 import static org.killbill.billing.invoice.api.InvoiceItemType.TAX;
 import static org.killbill.billing.plugin.TestUtils.buildAccount;
-import static org.killbill.billing.plugin.TestUtils.buildLogService;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.killbill.billing.plugin.simpletax.config.TestSimpleTaxConfig.TAX_RESOLVER_PROP;
@@ -147,7 +146,8 @@ public class TestSimpleTaxPlugin {
 
     private OSGIKillbillAPI services;
     private AccountUserApi accountUserApi;
-    private OSGIKillbillLogService logService = buildLogService();
+    @Mock
+    private OSGIKillbillLogService logService; // = TestUtils.buildLogService();
     @Mock
     private OSGIConfigPropertiesService cfgService;
     private Clock clock = new DefaultClock();

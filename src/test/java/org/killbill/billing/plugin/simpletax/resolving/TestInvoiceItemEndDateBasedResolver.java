@@ -220,6 +220,7 @@ public class TestInvoiceItemEndDateBasedResolver {
         assertNull(resolver.applicableCodeForItem(setOf(tax0216FromTomorrow), itemEndingToday));
     }
 
+    @SafeVarargs
     private static <T> Set<T> setOf(T... elems) {
         return ImmutableSet.copyOf(elems);
     }

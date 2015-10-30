@@ -17,6 +17,7 @@
 package org.killbill.billing.plugin.simpletax.plumbing;
 
 import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
+import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -28,10 +29,12 @@ import static org.testng.Assert.assertNotNull;
 
 import java.util.Hashtable;
 import java.util.Observable;
+import java.util.Properties;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.osgi.api.OSGIConfigProperties;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
+import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -69,6 +72,9 @@ public class TestSimpleTaxActivator {
 
         mockService(Observable.class, observableService);
         mockService(OSGIConfigProperties.class, configPropsService);
+        Properties minimalNonComplainingConfig = new Properties();
+        minimalNonComplainingConfig.put(PROPERTY_PREFIX + "taxResolver", NullTaxResolver.class.getName());
+        when(configPropsService.getProperties()).thenReturn(minimalNonComplainingConfig);
     }
 
     /** Helper method that mocks an OSGi service. */
