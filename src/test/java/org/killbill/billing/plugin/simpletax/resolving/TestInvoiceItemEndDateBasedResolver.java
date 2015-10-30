@@ -16,7 +16,7 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving;
 
-import static org.killbill.billing.test.helpers.Assert.assertEqualsIgnoreScale;
+import static org.killbill.billing.test.helpers.TestUtil.assertEqualsIgnoreScale;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;

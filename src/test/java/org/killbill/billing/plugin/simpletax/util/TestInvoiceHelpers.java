@@ -25,7 +25,7 @@ import static java.util.Arrays.asList;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.amountWithAdjustments;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.sumAmounts;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.sumItems;
-import static org.killbill.billing.test.helpers.Assert.assertEqualsIgnoreScale;
+import static org.killbill.billing.test.helpers.TestUtil.assertEqualsIgnoreScale;
 
 import java.math.BigDecimal;
 import java.util.UUID;

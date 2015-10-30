@@ -32,7 +32,7 @@ import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.res
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
-import static org.killbill.billing.test.helpers.Assert.assertEqualsIgnoreScale;
+import static org.killbill.billing.test.helpers.TestUtil.assertEqualsIgnoreScale;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 

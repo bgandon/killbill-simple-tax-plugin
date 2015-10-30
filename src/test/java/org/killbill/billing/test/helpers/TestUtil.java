@@ -18,6 +18,9 @@ package org.killbill.billing.test.helpers;
 
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
+import static org.testng.Assert.assertTrue;
+
+import java.math.BigDecimal;
 
 /**
  * Common utility methods used in tests.
@@ -29,9 +32,21 @@ public final class TestUtil {
     }
 
     /**
+     * Helper assert that ignores {@linkplain BigDecimal#scale() scales}.
+     *
+     * @param actual
+     *            the actual value
+     * @param expected
+     *            the expected value
+     */
+    public static void assertEqualsIgnoreScale(BigDecimal actual, BigDecimal expected) {
+        assertTrue(expected.compareTo(actual) == 0);
+    }
+
+    /**
      * An {@link org.apache.commons.lang3.ObjectUtils#identityToString(Object)
      * identityToString()} variant with short class name.
-     * 
+     *
      * @param obj
      *            The object to create a toString for, may be {@code null}.
      * @return The default toString text, or {@code null} if {@code null} passed
