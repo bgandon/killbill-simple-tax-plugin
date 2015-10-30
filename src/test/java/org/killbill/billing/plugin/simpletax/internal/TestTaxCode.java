@@ -17,7 +17,7 @@
 package org.killbill.billing.plugin.simpletax.internal;
 
 import static java.math.BigDecimal.ZERO;
-import static org.apache.commons.lang3.ObjectUtils.identityToString;
+import static org.killbill.billing.test.helpers.TestUtil.shortIdentityToString;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 
 import org.joda.time.LocalDate;
 import org.killbill.billing.test.helpers.TaxCodeBuilder;
+import org.killbill.billing.test.helpers.TestUtil;
 import org.testng.annotations.Test;
 
 /**
@@ -102,8 +103,8 @@ public class TestTaxCode {
     @Test(groups = "fast")
     public void shouldPrintFields() {
         // Expect
-        assertEquals(taxTT.toString(), identityToString(taxTT)//
-                + "[name=toto,"//
+        String shortIdentityToString = shortIdentityToString(taxTT);
+        assertEquals(taxTT.toString(), shortIdentityToString + "[name=toto,"//
                 + "taxItemDescription=titi,"//
                 + "rate=0.06713,"//
                 + "startingOn=2015-10-25,"//

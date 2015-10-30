@@ -16,6 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
+import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
+
 import java.math.BigDecimal;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -105,7 +107,7 @@ public class TaxCode {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)//
+        return new ToStringBuilder(this, SHORT_STYLE)//
                 .append("name", name)//
                 .append("taxItemDescription", taxItemDescription)//
                 .append("rate", rate)//
