@@ -33,6 +33,7 @@ import java.util.Properties;
 
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.osgi.api.OSGIConfigProperties;
+import org.killbill.billing.osgi.api.OSGIKillbill;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.mockito.ArgumentCaptor;
@@ -58,6 +59,8 @@ public class TestSimpleTaxActivator {
     private Observable observableService = new Observable();
     @Mock(answer = RETURNS_DEEP_STUBS)
     private OSGIConfigProperties configPropsService;
+    @Mock
+    private OSGIKillbill killbillMetaAPIService;
 
     private SimpleTaxActivator activator = new SimpleTaxActivator();
 
@@ -72,9 +75,9 @@ public class TestSimpleTaxActivator {
 
         mockService(Observable.class, observableService);
         mockService(OSGIConfigProperties.class, configPropsService);
-        Properties minimalNonComplainingConfig = new Properties();
-        minimalNonComplainingConfig.put(PROPERTY_PREFIX + "taxResolver", NullTaxResolver.class.getName());
-        when(configPropsService.getProperties()).thenReturn(minimalNonComplainingConfig);
+        mockService(OSGIKillbill.class, killbillMetaAPIService);
+
+        setupMinimalConfigProps();
     }
 
     /** Helper method that mocks an OSGi service. */
@@ -83,6 +86,12 @@ public class TestSimpleTaxActivator {
         ServiceReference<S> serviceRef = mock(ServiceReference.class);
         when(context.getServiceReferences(clazz.getName(), null)).thenReturn(new ServiceReference<?>[] { serviceRef });
         when(context.getService(serviceRef)).thenReturn(serviceInstance);
+    }
+
+    private void setupMinimalConfigProps() {
+        Properties minimalNonComplainingConfig = new Properties();
+        minimalNonComplainingConfig.put(PROPERTY_PREFIX + "taxResolver", NullTaxResolver.class.getName());
+        when(configPropsService.getProperties()).thenReturn(minimalNonComplainingConfig);
     }
 
     @Test(groups = "fast")

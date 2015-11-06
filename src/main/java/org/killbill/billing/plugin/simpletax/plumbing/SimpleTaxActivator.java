@@ -20,10 +20,17 @@ import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PRO
 
 import java.util.Hashtable;
 
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
+import org.killbill.billing.plugin.simpletax.config.http.SimpleTaxServlet;
+import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController;
+import org.killbill.billing.plugin.simpletax.config.http.VatinController;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;
@@ -62,8 +69,10 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         createDefaultConfig();
 
         InvoicePluginApi plugin = createPlugin();
+        register(InvoicePluginApi.class, plugin, context);
 
-        registerInvoicePluginApi(context, plugin);
+        HttpServlet servlet = createServlet();
+        register(Servlet.class, servlet, context);
     }
 
     /**
@@ -102,10 +111,17 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         return new SimpleTaxPlugin(configHandler, killbillAPI, getConfigService(), logService, clock);
     }
 
-    private void registerInvoicePluginApi(BundleContext context, InvoicePluginApi plugin) {
+    private HttpServlet createServlet() {
+        CustomFieldService customFieldService = new CustomFieldService(killbillAPI.getCustomFieldUserApi(), logService);
+        TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
+        VatinController vatinController = new VatinController(customFieldService, logService);
+        return new SimpleTaxServlet(vatinController, taxCountryController);
+    }
+
+    private <S> void register(Class<S> serviceClass, S serviceInstance, BundleContext context) {
         Hashtable<String, String> props = new Hashtable<String, String>();
         props.put(PLUGIN_NAME_PROP, PLUGIN_NAME);
-        registrar.registerService(context, InvoicePluginApi.class, plugin, props);
+        registrar.registerService(context, serviceClass, serviceInstance, props);
     }
 
     /**
