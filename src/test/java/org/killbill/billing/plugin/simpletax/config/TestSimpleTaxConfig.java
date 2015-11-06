@@ -54,6 +54,7 @@ import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
@@ -68,7 +69,7 @@ public class TestSimpleTaxConfig {
 
     public static final String TAX_RESOLVER_PROP = "org.killbill.billing.plugin.simpletax.taxResolver";
 
-    private static final LazyValue<Constructor<NullTaxResolver>, RuntimeException> NTR_CONSTRUCTOR = new LazyValue<Constructor<NullTaxResolver>, RuntimeException>() {
+    private static final Supplier<Constructor<NullTaxResolver>> NTR_CONSTRUCTOR = new LazyValue<Constructor<NullTaxResolver>>() {
         @Override
         protected Constructor<NullTaxResolver> initialize() throws RuntimeException {
             try {

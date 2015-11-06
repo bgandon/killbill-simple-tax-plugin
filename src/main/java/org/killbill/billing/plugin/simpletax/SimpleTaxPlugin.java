@@ -61,7 +61,8 @@ import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHand
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
-import org.killbill.billing.plugin.simpletax.util.LazyValue;
+import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
+import org.killbill.billing.plugin.simpletax.util.CheckedLazyValue;
 import org.killbill.billing.util.api.CustomFieldApiException;
 import org.killbill.billing.util.api.CustomFieldUserApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -307,7 +308,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      */
     private TaxCodeService taxCodeService(Account account, Set<Invoice> allInvoices, SimpleTaxConfig cfg,
             final TenantContext tenantCtx) {
-        LazyValue<StaticCatalog, CatalogApiException> catalog = new LazyValue<StaticCatalog, CatalogApiException>() {
+        CheckedSupplier<StaticCatalog, CatalogApiException> catalog = new CheckedLazyValue<StaticCatalog, CatalogApiException>() {
             @Override
             protected StaticCatalog initialize() throws CatalogApiException {
                 return services().getCatalogUserApi().getCurrentCatalog(null, tenantCtx);

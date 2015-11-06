@@ -32,18 +32,20 @@ import static org.testng.Assert.assertSame;
 
 import org.testng.annotations.Test;
 
+import com.google.common.base.Supplier;
+
 /**
- * Tests for {@link LazyValue}.
+ * Tests for {@link ConcurrentLazyValue}.
  *
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")
-public class TestLazyValue {
+public class TestConcurrentLazyValue {
 
-    private static class DelegatingLazyValue extends LazyValue<Integer, NumberFormatException> {
-        private final LazyValue<Integer, NumberFormatException> delegate;
+    private static class DelegatingLazyValue extends ConcurrentLazyValue<Integer> {
+        private final ConcurrentLazyValue<Integer> delegate;
 
-        public DelegatingLazyValue(LazyValue<Integer, NumberFormatException> delegate) {
+        public DelegatingLazyValue(ConcurrentLazyValue<Integer> delegate) {
             this.delegate = delegate;
         }
 
@@ -53,7 +55,7 @@ public class TestLazyValue {
         }
     }
 
-    private static class ParseInt extends LazyValue<Integer, NumberFormatException> {
+    private static class ParseInt extends ConcurrentLazyValue<Integer> {
         private final String integer;
 
         public ParseInt(String integer) {
@@ -70,8 +72,8 @@ public class TestLazyValue {
     public void shouldSetValueInitializedEvenIfNull() {
         // Given
         @SuppressWarnings("unchecked")
-        LazyValue<Integer, NumberFormatException> delegateMock = mock(LazyValue.class);
-        LazyValue<Integer, NumberFormatException> lazyValue = new DelegatingLazyValue(delegateMock);
+        ConcurrentLazyValue<Integer> delegateMock = mock(ConcurrentLazyValue.class);
+        Supplier<Integer> lazyValue = new DelegatingLazyValue(delegateMock);
 
         // When
         Object value = lazyValue.get();
@@ -87,9 +89,9 @@ public class TestLazyValue {
         // Given
         Integer eleven = new Integer(11);
         @SuppressWarnings("unchecked")
-        LazyValue<Integer, NumberFormatException> delegateMock = mock(LazyValue.class);
+        ConcurrentLazyValue<Integer> delegateMock = mock(ConcurrentLazyValue.class);
         when(delegateMock.initialize()).thenReturn(eleven);
-        LazyValue<Integer, NumberFormatException> lazyValue = new DelegatingLazyValue(delegateMock);
+        Supplier<Integer> lazyValue = new DelegatingLazyValue(delegateMock);
 
         // When
         Object value = lazyValue.get();
@@ -104,7 +106,7 @@ public class TestLazyValue {
     @Test(groups = "fast")
     public void shouldGetSameValue() {
         // Given
-        LazyValue<Integer, NumberFormatException> lazyValue = new ParseInt("10");
+        Supplier<Integer> lazyValue = new ParseInt("10");
 
         // When
         Integer integer = lazyValue.get();
@@ -119,7 +121,7 @@ public class TestLazyValue {
     @Test(groups = "fast")
     public void shouldNotMarkValueInitializedWhenThrowing() throws Exception {
         // Given
-        LazyValue<Integer, NumberFormatException> value = new ParseInt("plop");
+        ConcurrentLazyValue<Integer> value = new ParseInt("plop");
 
         // When
         catchException(value).get();

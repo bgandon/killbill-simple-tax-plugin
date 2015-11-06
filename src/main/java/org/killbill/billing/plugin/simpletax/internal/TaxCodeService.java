@@ -33,7 +33,7 @@ import org.killbill.billing.catalog.api.StaticCatalog;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
-import org.killbill.billing.plugin.simpletax.util.LazyValue;
+import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
 import org.killbill.billing.util.customfield.CustomField;
 
 import com.google.common.collect.ImmutableSetMultimap;
@@ -50,7 +50,7 @@ public class TaxCodeService {
      */
     public static final String TAX_CODES_FIELD_NAME = "taxCodes";
 
-    private LazyValue<StaticCatalog, CatalogApiException> catalog;
+    private CheckedSupplier<StaticCatalog, CatalogApiException> catalog;
     private SimpleTaxConfig cfg;
     private SetMultimap<UUID, CustomField> taxFieldsOfInvoices;
 
@@ -65,7 +65,7 @@ public class TaxCodeService {
      *            The tax fields of all account invoices, grouped by their
      *            related taxable items.
      */
-    public TaxCodeService(LazyValue<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
+    public TaxCodeService(CheckedSupplier<StaticCatalog, CatalogApiException> catalog, SimpleTaxConfig cfg,
             SetMultimap<UUID, CustomField> taxFieldsOfInvoices) {
         super();
         this.catalog = catalog;

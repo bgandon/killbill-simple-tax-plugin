@@ -16,55 +16,17 @@
  */
 package org.killbill.billing.plugin.simpletax.util;
 
+import com.google.common.base.Supplier;
+
 /**
- * A simple holder for a lazily initialized value.
+ * A {@link Supplier} and holder for a lazily initialized value.
  * <p>
- * Useful to optionally initialize a complex value only once.
- * <p>
- * Highly inspired by
- * {@link org.apache.commons.lang3.concurrent.LazyInitializer}, but no thread
- * safety is implemented here.
+ * Useful to optionally initialize a complex value only once, without caring for
+ * the details of any unchecked exception that could be thrown at that moment.
  *
- * @author Benjamin Gandon
  * @param <T>
- *            The type of the lazy value
- * @param <E>
- *            The type of error that might happen when initializing the value.
+ *            The type of the lazy value.
+ * @author Benjamin Gandon
  */
-public abstract class LazyValue<T, E extends Exception> {
-
-    /** Whether the value is initialized. */
-    private boolean initialized = false;
-
-    /** Stores the managed object. */
-    private T value;
-
-    /**
-     * Returns the value wrapped by this instance, initializing it on first
-     * access. Subsequent access return the cached value.
-     *
-     * @return the object initialized by this {@code LazyInitializer}
-     * @throws E
-     *             if an error occurred during initialization of the object
-     */
-    public T get() throws E {
-        if (!initialized) {
-            value = initialize();
-            initialized = true;
-        }
-        return value;
-    }
-
-    /**
-     * Initializes the value managed by this instance. This method is called by
-     * {@link #get()} when the object is accessed for the first time.
-     * <p>
-     * This method is guaranteed to be called only once, even if the initialized
-     * value is {@code null}.
-     *
-     * @return the managed data object
-     * @throws E
-     *             if an error occurs during object creation
-     */
-    protected abstract T initialize() throws E;
+public abstract class LazyValue<T> extends CheckedLazyValue<T, RuntimeException> implements Supplier<T> {
 }

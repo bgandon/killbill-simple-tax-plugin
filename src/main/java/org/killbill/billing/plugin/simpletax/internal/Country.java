@@ -26,8 +26,9 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.killbill.billing.plugin.simpletax.util.LazyValue;
+import org.killbill.billing.plugin.simpletax.util.ConcurrentLazyValue;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -38,9 +39,9 @@ import com.google.common.collect.ImmutableSet;
  */
 public class Country {
 
-    private static final LazyValue<Set<String>, RuntimeException> COUNTRIES = new LazyValue<Set<String>, RuntimeException>() {
+    private static final Supplier<Set<String>> COUNTRIES = new ConcurrentLazyValue<Set<String>>() {
         @Override
-        protected Set<String> initialize() throws RuntimeException {
+        protected Set<String> initialize() {
             return ImmutableSet.copyOf(getISOCountries());
         }
     };
@@ -58,7 +59,8 @@ public class Country {
      *             {@link Locale#getISOCountries()}.
      */
     public Country(String code) throws IllegalArgumentException {
-        checkArgument(COUNTRIES.get().contains(code), "Illegal country code: %s", code);
+        super();
+        checkArgument(COUNTRIES.get().contains(code), "Illegal country code: [%s]", code);
         this.code = code;
     }
 

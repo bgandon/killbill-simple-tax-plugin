@@ -43,7 +43,7 @@ import org.killbill.billing.catalog.api.StaticCatalog;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
-import org.killbill.billing.plugin.simpletax.util.LazyValue;
+import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.test.helpers.InvoiceBuilder;
 import org.killbill.billing.test.helpers.Promise;
@@ -79,7 +79,7 @@ public class TestTaxCodeService {
     private StaticCatalog staticCatalog;
 
     @Mock
-    private LazyValue<StaticCatalog, CatalogApiException> catalog;
+    private CheckedSupplier<StaticCatalog, CatalogApiException> catalog;
     @Mock
     private SimpleTaxConfig cfg;
 
