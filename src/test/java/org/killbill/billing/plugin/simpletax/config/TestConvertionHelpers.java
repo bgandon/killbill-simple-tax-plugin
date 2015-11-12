@@ -32,6 +32,7 @@ import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.res
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
 import static org.killbill.billing.test.helpers.TestUtil.assertEqualsIgnoreScale;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -296,5 +297,19 @@ public class TestConvertionHelpers {
     public void shouldConvertTimeZone() {
         assertEquals(convertTimeZone(today, PARIS, LONDON), yesterday);
         assertEquals(convertTimeZone(today, LONDON, LONDON), today);
+    }
+
+    @Test(groups = "fast")
+    public void shouldConvertUUID() {
+        // Expect
+        assertNull(toUUIDOrNull(null));
+        assertNull(toUUIDOrNull(""));
+        assertNull(toUUIDOrNull("\t"));
+        assertNull(toUUIDOrNull("1-2-3-4"));
+        assertNull(toUUIDOrNull("12345-plop-6789-whatever-0abcd"));
+        assertNull(toUUIDOrNull("12345678-1234-5678-abcd-123456789abc\t"));
+
+        assertEquals(toUUIDOrNull("12345678-1234-5678-abcd-123456789abc").toString(),
+                "12345678-1234-5678-abcd-123456789abc");
     }
 }

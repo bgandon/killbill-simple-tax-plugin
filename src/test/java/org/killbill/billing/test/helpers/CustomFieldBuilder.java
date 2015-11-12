@@ -39,6 +39,14 @@ public class CustomFieldBuilder implements Builder<CustomField> {
                 .build();
     }
 
+    public static CustomFieldBuilder copy(CustomFieldBuilder that) {
+        return new CustomFieldBuilder()//
+                .withObjectType(that.objectType)//
+                .withObjectId(that.objectId)//
+                .withFieldName(that.fieldName)//
+                .withFieldValue(that.fieldValue);
+    }
+
     public CustomFieldBuilder withObjectId(UUID objectId) {
         this.objectId = objectId;
         return this;

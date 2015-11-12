@@ -28,6 +28,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.killbill.billing.plugin.simpletax.util.ConcurrentLazyValue;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 
@@ -58,6 +60,7 @@ public class Country {
      *             when the country code is not an element of
      *             {@link Locale#getISOCountries()}.
      */
+    @JsonCreator
     public Country(String code) throws IllegalArgumentException {
         super();
         checkArgument(COUNTRIES.get().contains(code), "Illegal country code: [%s]", code);
@@ -69,6 +72,7 @@ public class Country {
      *
      * @return The code of this country. Never {@code null}.
      */
+    @JsonValue
     public String getCode() {
         return code;
     }

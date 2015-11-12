@@ -17,16 +17,13 @@
 package org.killbill.billing.plugin.simpletax.config.http;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.killbill.billing.ObjectType.ACCOUNT;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
 
 import org.killbill.billing.plugin.api.PluginTenantContext;
 import org.killbill.billing.plugin.simpletax.internal.Country;
@@ -39,34 +36,61 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
+/**
+ * A controller that serves the end points related to Tax Countries.
+ *
+ * @author Benjamin Gandon
+ */
 public class TaxCountryController {
     private static final String TAX_COUNTRY_CUSTOM_FIELD_NAME = "taxCountry";
 
     private OSGIKillbillLogService logService;
     private CustomFieldService customFieldService;
 
+    /**
+     * Constructs a new controller for tax country end points.
+     *
+     * @param customFieldService
+     *            The service to use when accessing custom fields.
+     * @param logService
+     *            The Kill Bill log service to use.
+     */
     public TaxCountryController(CustomFieldService customFieldService, OSGIKillbillLogService logService) {
         super();
         this.logService = logService;
         this.customFieldService = customFieldService;
     }
 
-    public Object listTaxCountries(@Nullable UUID accountId, Tenant tenant, HttpServletResponse resp)
-            throws IOException {
+    /**
+     * Lists JSON resources for tax countries taking any restrictions into
+     * account.
+     *
+     * @param accountId
+     *            Any account on which the tax countries should be restricted.
+     *            Might be {@code null}.
+     * @param tenant
+     *            The tenant on which to operate.
+     * @return A list of {@linkplain TaxCountryRsc account tax countries
+     *         resources}. Never {@code null}.
+     */
+    public Object listTaxCountries(@Nullable UUID accountId, Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
         List<CustomField> fields;
         if (accountId == null) {
-            fields = customFieldService.searchFieldsOfTenant(TAX_COUNTRY_CUSTOM_FIELD_NAME, tenantContext);
+            fields = customFieldService.findAllAccountFieldsByFieldNameAndTenant(TAX_COUNTRY_CUSTOM_FIELD_NAME,
+                    tenantContext);
         } else {
-            fields = customFieldService.listFieldsOfAccount(accountId, tenantContext);
+            CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+                    TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
+            if (field == null) {
+                return ImmutableList.of();
+            }
+            fields = ImmutableList.of(field);
         }
 
         List<TaxCountryRsc> taxCountries = newArrayList();
         for (CustomField field : fields) {
-            if (!ACCOUNT.equals(field.getObjectType()) || !TAX_COUNTRY_CUSTOM_FIELD_NAME.equals(field.getFieldName())) {
-                continue;
-            }
             TaxCountryRsc taxCountry = toTaxCountryJsonOrNull(field.getObjectId(), field.getFieldValue());
             if (taxCountry != null) {
                 taxCountries.add(taxCountry);
@@ -75,24 +99,48 @@ public class TaxCountryController {
         return taxCountries;
     }
 
-    public Object getAccountTaxCountry(@Nonnull UUID accountId, Tenant tenant) throws IOException {
+    /**
+     * Returns a JSON resource for any tax country that could be attached to the
+     * given account.
+     *
+     * @param accountId
+     *            An account the tax country of which should be returned. Must
+     *            not be {@code null}.
+     * @param tenant
+     *            The tenant on which to operate.
+     * @return The {@linkplain TaxCountryRsc tax country resource} of the given
+     *         account, or {@code null} if none exists.
+     */
+    public Object getAccountTaxCountry(@Nonnull UUID accountId, Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
-        List<CustomField> fields = customFieldService.listFieldsOfAccount(accountId, tenantContext);
-        if (fields == null) {
-            fields = ImmutableList.of();
+        CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+                TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
+        if (field == null) {
+            return null;
         }
-        for (CustomField field : fields) {
-            if (TAX_COUNTRY_CUSTOM_FIELD_NAME.equals(field.getFieldName())) {
-                return toTaxCountryJsonOrNull(accountId, field.getFieldValue());
-            }
-        }
-        return null;
+        return toTaxCountryJsonOrNull(accountId, field.getFieldValue());
     }
 
-    public boolean saveAccountTaxCountry(UUID accountId, TaxCountryRsc taxCountry, Tenant tenant) {
+    /**
+     * Persists a new tax country value for a given account.
+     *
+     * @param accountId
+     *            An account the tax country of which should be modified. Must
+     *            not be {@code null}.
+     * @param taxCountryRsc
+     *            A new tax country resource to persist. Must not be
+     *            {@code null}.
+     * @param tenant
+     *            The tenant on which to operate.
+     * @return {@code true} if the tax country is properly saved, or
+     *         {@code false} otherwise.
+     * @throws NullPointerException
+     *             When {@code vatinRsc} is {@code null}.
+     */
+    public boolean saveAccountTaxCountry(@Nonnull UUID accountId, @Nonnull TaxCountryRsc taxCountryRsc, Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
-        String newValue = taxCountry.taxCountry.getCode();
+        String newValue = taxCountryRsc.taxCountry.getCode();
         return customFieldService.saveAccountField(newValue, TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
     }
 
@@ -103,15 +151,30 @@ public class TaxCountryController {
         } catch (IllegalArgumentException exc) {
             logService.log(LOG_ERROR, "Illegal value of [" + country + "] in field '" + TAX_COUNTRY_CUSTOM_FIELD_NAME
                     + "' for account " + accountId, exc);
-            taxCountry = null;
+            return null;
         }
         return new TaxCountryRsc(accountId, taxCountry);
     }
 
+    /**
+     * A resource for an account tax country.
+     *
+     * @author Benjamin Gandon
+     */
     public static final class TaxCountryRsc {
+        /** The identifier of the account this tax country belongs to. */
         public UUID accountId;
+        /** The tax country. */
         public Country taxCountry;
 
+        /**
+         * Constructs a new tax country resource.
+         *
+         * @param accountId
+         *            An account identifier.
+         * @param taxCountry
+         *            A tax country.
+         */
         @JsonCreator
         public TaxCountryRsc(@JsonProperty("accountId") UUID accountId, @JsonProperty("taxCountry") Country taxCountry) {
             this.accountId = accountId;

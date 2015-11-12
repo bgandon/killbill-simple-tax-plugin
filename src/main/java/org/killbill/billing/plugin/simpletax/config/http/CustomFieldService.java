@@ -16,6 +16,10 @@
  */
 package org.killbill.billing.plugin.simpletax.config.http;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.addAll;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.tryFind;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.killbill.billing.ObjectType.ACCOUNT;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
@@ -23,6 +27,9 @@ import static org.osgi.service.log.LogService.LOG_ERROR;
 
 import java.util.List;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 import org.killbill.billing.plugin.api.PluginCallContext;
@@ -35,54 +42,132 @@ import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.billing.util.entity.Pagination;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
+/**
+ * A service class that eases manipulating custom fields values.
+ *
+ * @author Benjamin Gandon
+ */
 public class CustomFieldService {
 
     private static final long START_OFFSET = 0L;
     private static final long PAGE_SIZE = 100L;
 
-    private CustomFieldUserApi customFieldsApi;
+    private CustomFieldUserApi customFieldApi;
     private OSGIKillbillLogService logService;
 
-    public CustomFieldService(CustomFieldUserApi customFieldsApi, OSGIKillbillLogService logService) {
+    /**
+     * Constructs a service for manipulating custom fields.
+     *
+     * @param customFieldApi
+     *            The Kill Bill service API class to use.
+     * @param logService
+     *            The Kill Bill logging service to use.
+     */
+    public CustomFieldService(CustomFieldUserApi customFieldApi, OSGIKillbillLogService logService) {
         super();
-        this.customFieldsApi = customFieldsApi;
+        this.customFieldApi = customFieldApi;
         this.logService = logService;
     }
 
-    public List<CustomField> searchFieldsOfTenant(String searchTerm, TenantContext tenantContext) {
+    /**
+     * A predicate that only accepts custom fields on
+     * {@linkplain org.killbill.billing.ObjectType#ACCOUNT account objects} with
+     * a specific name.
+     */
+    private static class RetainAccountFieldsWithName implements Predicate<CustomField> {
+        private String fieldName;
+
+        public RetainAccountFieldsWithName(String fieldName) {
+            super();
+            checkNotNull(fieldName, "Field name must not be null");
+            this.fieldName = fieldName;
+        }
+
+        @Override
+        public boolean apply(CustomField field) {
+            return ACCOUNT.equals(field.getObjectType()) && fieldName.equals(field.getFieldName());
+        }
+    }
+
+    /**
+     * Finds all custom fields on account objects that match a specific field
+     * name in the context of a given tenant.
+     *
+     * @param fieldName
+     *            A specific field name that returned fields will match.
+     * @param tenantContext
+     *            The tenant on which to operate.
+     * @return The list of matching custom fields. Never {@code null}.
+     */
+    @Nonnull
+    public List<CustomField> findAllAccountFieldsByFieldNameAndTenant(String fieldName, TenantContext tenantContext) {
         List<CustomField> fields = newArrayList();
-        Pagination<CustomField> page = customFieldsApi.searchCustomFields(searchTerm, START_OFFSET, PAGE_SIZE,
-                tenantContext);
-        while (Iterables.addAll(fields, page)) {
-            page = customFieldsApi.searchCustomFields(searchTerm, page.getNextOffset(), PAGE_SIZE, tenantContext);
-        }
+        Predicate<CustomField> onlyAccountFieldsWithExpectedName = new RetainAccountFieldsWithName(fieldName);
+        Pagination<CustomField> page;
+        Long nextOffset = START_OFFSET;
+        do {
+            page = customFieldApi.searchCustomFields(fieldName, nextOffset, PAGE_SIZE, tenantContext);
+            addAll(fields, filter(page, onlyAccountFieldsWithExpectedName));
+            nextOffset = page.getNextOffset();
+        } while (nextOffset != null);
         return fields;
     }
 
-    public List<CustomField> listFieldsOfAccount(UUID accountId, TenantContext tenantContext) {
-        List<CustomField> fields = customFieldsApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
-        if (fields == null) {
-            fields = ImmutableList.of();
+    /**
+     * Finds a custom field on a given account object that matches a specific
+     * field name in the context of a given tenant.
+     *
+     * @param fieldName
+     *            A specific field name that any returned field will match.
+     * @param accountId
+     *            An identifier for an account.
+     * @param tenantContext
+     *            The tenant on which to operate.
+     * @return The matching custom field if any, or {@code null} if no such
+     *         field exists.
+     */
+    @Nullable
+    public CustomField findAccountFieldByFieldNameAndAccountAndTenant(String fieldName, UUID accountId,
+            TenantContext tenantContext) {
+        List<CustomField> accountFields = customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
+        if (accountFields == null) {
+            return null;
         }
-        return fields;
+        return tryFind(accountFields, new RetainAccountFieldsWithName(fieldName)).orNull();
     }
 
+    /**
+     * Persists a new value for a custom field on a given account object.
+     *
+     * @param fieldValue
+     *            The new field value.
+     * @param fieldName
+     *            The field name.
+     * @param accountId
+     *            The identifier for the account object.
+     * @param tenantContext
+     *            The tenant on which to operate.
+     * @return {@code true} when the new value is properly saved, or
+     *         {@code false} otherwise.
+     */
     public boolean saveAccountField(String fieldValue, String fieldName, UUID accountId, TenantContext tenantContext) {
         CustomField existing = null;
-        List<CustomField> accountFields = customFieldsApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
-        for (CustomField field : accountFields) {
-            if (field.getFieldName().equals(fieldName)) {
-                existing = field;
-                break;
+        List<CustomField> accountFields = customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
+        if (accountFields != null) {
+            for (CustomField field : accountFields) {
+                if (field.getFieldName().equals(fieldName)) {
+                    existing = field;
+                    break;
+                }
             }
         }
         CallContext context = new PluginCallContext(PLUGIN_NAME, new DateTime(), tenantContext.getTenantId());
         if (existing != null) {
             try {
-                customFieldsApi.removeCustomFields(ImmutableList.of(existing), context);
+                customFieldApi.removeCustomFields(ImmutableList.of(existing), context);
             } catch (CustomFieldApiException exc) {
                 logService.log(
                         LOG_ERROR,
@@ -97,19 +182,19 @@ public class CustomFieldService {
                 .withFieldName(fieldName).withFieldValue(fieldValue)//
                 .build();
         try {
-            customFieldsApi.addCustomFields(ImmutableList.of(newField), context);
+            customFieldApi.addCustomFields(ImmutableList.of(newField), context);
             return true;
         } catch (CustomFieldApiException exc) {
             logService.log(LOG_ERROR, "while adding custom field '" + fieldName + "' with value [" + fieldValue
                     + "] on account object [" + accountId + "]", exc);
             try {
                 // Add back the removed field
-                customFieldsApi.addCustomFields(ImmutableList.of(existing), context);
+                customFieldApi.addCustomFields(ImmutableList.of(existing), context);
             } catch (CustomFieldApiException exc2) {
                 logService.log(LOG_ERROR,
                         "while adding back the previously removed custom field '" + existing.getFieldName()
-                        + "' with value [" + existing.getFieldValue() + "] on " + existing.getObjectType()
-                        + " object [" + existing.getObjectId() + "]", exc);
+                                + "' with value [" + existing.getFieldValue() + "] on " + existing.getObjectType()
+                                + " object [" + existing.getObjectId() + "]", exc);
             }
             return false;
         }

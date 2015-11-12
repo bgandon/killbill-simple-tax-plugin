@@ -29,8 +29,10 @@ import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -353,5 +355,44 @@ public abstract class ConvertionHelpers {
         checkNotNull(originTimeZone);
         checkNotNull(targetTimeZone);
         return localDate.toDateTimeAtStartOfDay(originTimeZone).withZone(targetTimeZone).toLocalDate();
+    }
+
+    /** An exact regular expression to match UUIDs. */
+    public static final String UUID_EXACT_PATTERN = "(?i:[a-f\\d]{8}(?:-[a-f\\d]{4}){3}-[a-f\\d]{12})";
+    /**
+     * A loose regular expression to match canonical UUID representations that
+     * will be properly converted by {@link UUID#fromString(String)}.
+     */
+    public static final String UUID_LOOSE_PATTERN = "\\w{8}(?:-\\w{4}){3}-\\w{12}";
+
+    /**
+     * Converts a string into a {@link UUID}.
+     * <p>
+     * <strong>WARNING:</strong>
+     * <p>
+     * Due to how the underlying {@link UUID#fromString(String)} implementation,
+     * this method silently accepts non-canonical representations of UUIDs. For
+     * example, the malformed
+     * {@code 43210000-23456789-ABCD-0000-7FFF123456789ABC} representation is
+     * converted to {@code 43212345-6789-abcd-7fff-123456789abc}.
+     * <p>
+     * These multiple representations of a single UUID could cause issues if any
+     * security system assumes that only single canonical representations are
+     * used. Thus, you should first make sure that the UUID conforms either to
+     * {@link #UUID_EXACT_PATTERN} or {@link #UUID_LOOSE_PATTERN}.
+     *
+     * @param name
+     *            A valid string representation of a UUID.
+     * @return A UUID instance or {@code null}.
+     */
+    public static UUID toUUIDOrNull(@Nullable String name) {
+        if (name == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(name);
+        } catch (IllegalArgumentException exc) {
+            return null;
+        }
     }
 }

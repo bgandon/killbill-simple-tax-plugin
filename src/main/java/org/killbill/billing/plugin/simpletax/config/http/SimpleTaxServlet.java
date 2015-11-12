@@ -20,6 +20,8 @@ import static java.util.regex.Pattern.compile;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.UUID_LOOSE_PATTERN;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 
 import java.io.IOException;
@@ -27,7 +29,6 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +38,7 @@ import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.Ta
 import org.killbill.billing.plugin.simpletax.config.http.VatinController.VATINRsc;
 import org.killbill.billing.tenant.api.Tenant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -50,7 +52,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
  * GET /vatins
  * GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
- * 
+ *
  * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
  * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
  * GET /taxCountries
@@ -79,16 +81,17 @@ public class SimpleTaxServlet extends PluginServlet {
 
     private static final String PLUGIN_BASE_PATH = "/plugins/" + PLUGIN_NAME;
 
-    private static final String TAX_COUNTRIES_PATH = "/taxCountries";
-    private static final String VATINS_PATH = "/vatins";
-    private static final String ACCOUNT_PARAM_NAME = "account";
-
     private static final String ACCOUNTS_PATH = "/accounts";
-    private static final Pattern ACCOUNT_PATTERN = compile(ACCOUNTS_PATH + "/(\\w+(?:-\\w+){4})/(\\w+)");
+    private static final Pattern ACCOUNT_PATTERN = compile(ACCOUNTS_PATH + "/(" + UUID_LOOSE_PATTERN + ")/(\\w+)");
     private static final int ACCOUNT_ID_GROUP = 1;
     private static final int RESOURCE_NAME_GROUP = 2;
     private static final String VATIN_RESOURCE_NAME = "vatin";
     private static final String TAX_COUNTRY_RESOURCE_NAME = "taxCountry";
+
+    private static final String TAX_COUNTRIES_PATH = "/taxCountries";
+    private static final String VATINS_PATH = "/vatins";
+    private static final String ACCOUNT_PARAM_NAME = "account";
+    private static final Pattern LOOSE_UUID = compile(UUID_LOOSE_PATTERN);
 
     private static String accountResourceUri(UUID accountId, String resourceName) {
         return PLUGIN_BASE_PATH + ACCOUNTS_PATH + '/' + accountId + '/' + resourceName;
@@ -99,14 +102,36 @@ public class SimpleTaxServlet extends PluginServlet {
     private TaxCountryController taxCountryController;
     private VatinController vatinController;
 
+    /**
+     * Constructs a new servlet for configuring data related to the simple tax
+     * plugin.
+     *
+     * @param vatinController
+     *            The VATIN controller to use.
+     * @param taxCountryController
+     *            The tax country controller to use.
+     */
     public SimpleTaxServlet(VatinController vatinController, TaxCountryController taxCountryController) {
         super();
         this.taxCountryController = taxCountryController;
         this.vatinController = vatinController;
     }
 
+    /**
+     * This implementation serves these HTTP end points:
+     *
+     * <pre>
+     * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+     * GET /taxCountries
+     * GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+     * 
+     * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
+     * GET /vatins
+     * GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
+     * </pre>
+     */
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Tenant tenant = getTenant(req);
         if (tenant == null) {
             buildNotFoundResponse("No tenant specified by the 'X-Killbill-ApiKey'"
@@ -139,17 +164,20 @@ public class SimpleTaxServlet extends PluginServlet {
         if (TAX_COUNTRIES_PATH.equals(pathInfo)) {
             String account = req.getParameter(ACCOUNT_PARAM_NAME);
             if (isBlank(account)) {
-                Object value = taxCountryController.listTaxCountries(null, tenant, resp);
+                Object value = taxCountryController.listTaxCountries(null, tenant);
                 writeJsonOkResponse(value, resp);
                 return;
             }
-            UUID accountId = toUUIDOrNull(account);
+            UUID accountId = null;
+            if (LOOSE_UUID.matcher(account).matches()) {
+                accountId = toUUIDOrNull(account);
+            }
             if (accountId == null) {
                 resp.sendError(SC_BAD_REQUEST, "Illegal value [" + account + "] for request parameter ["
                         + ACCOUNT_PARAM_NAME + "]");
                 return;
             }
-            Object value = taxCountryController.listTaxCountries(accountId, tenant, resp);
+            Object value = taxCountryController.listTaxCountries(accountId, tenant);
             writeJsonOkResponse(value, resp);
             return;
         }
@@ -160,7 +188,10 @@ public class SimpleTaxServlet extends PluginServlet {
                 writeJsonOkResponse(value, resp);
                 return;
             }
-            UUID accountId = toUUIDOrNull(account);
+            UUID accountId = null;
+            if (LOOSE_UUID.matcher(account).matches()) {
+                accountId = toUUIDOrNull(account);
+            }
             if (accountId == null) {
                 resp.sendError(SC_BAD_REQUEST, "Illegal value [" + account + "] for request parameter ["
                         + ACCOUNT_PARAM_NAME + "]");
@@ -173,8 +204,17 @@ public class SimpleTaxServlet extends PluginServlet {
         buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
     }
 
+    /**
+     * This implementation serves these HTTP end points:
+     *
+     * <pre>
+     * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
+     * 
+     * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+     * </pre>
+     */
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Tenant tenant = getTenant(req);
         if (tenant == null) {
             buildNotFoundResponse("No tenant specified by the 'X-Killbill-ApiKey'"
@@ -194,34 +234,43 @@ public class SimpleTaxServlet extends PluginServlet {
         }
         String resourceName = matcher.group(RESOURCE_NAME_GROUP);
         if (TAX_COUNTRY_RESOURCE_NAME.equals(resourceName)) {
-            TaxCountryRsc taxCountry = JSON_MAPPER.readValue(getRequestData(req), TaxCountryRsc.class);
+            TaxCountryRsc taxCountry;
+            try {
+                taxCountry = JSON_MAPPER.readValue(getRequestData(req), TaxCountryRsc.class);
+            } catch (JsonProcessingException exc) {
+                taxCountry = null;
+            }
+            if (taxCountry == null) {
+                resp.sendError(SC_BAD_REQUEST, "Invalid tax country resource in request body");
+                return;
+            }
             boolean saved = taxCountryController.saveAccountTaxCountry(accountId, taxCountry, tenant);
             if (!saved) {
                 resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save tax country");
+                return;
             }
             buildCreatedResponse(accountResourceUri(accountId, TAX_COUNTRY_RESOURCE_NAME), resp);
             return;
         } else if (VATIN_RESOURCE_NAME.equals(resourceName)) {
-            VATINRsc vatin = JSON_MAPPER.readValue(getRequestData(req), VATINRsc.class);
+            VATINRsc vatin;
+            try {
+                vatin = JSON_MAPPER.readValue(getRequestData(req), VATINRsc.class);
+            } catch (JsonProcessingException exc) {
+                vatin = null;
+            }
+            if (vatin == null) {
+                resp.sendError(SC_BAD_REQUEST, "Invalid VAT Identification Number resource in request body");
+                return;
+            }
             boolean saved = vatinController.saveAccountVatin(accountId, vatin, tenant);
             if (!saved) {
                 resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save VAT Identification Number");
+                return;
             }
             buildCreatedResponse(accountResourceUri(accountId, VATIN_RESOURCE_NAME), resp);
             return;
         }
         buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
-    }
-
-    private static UUID toUUIDOrNull(@Nullable String name) {
-        if (name == null) {
-            return null;
-        }
-        try {
-            return UUID.fromString(name);
-        } catch (IllegalArgumentException exc) {
-            return null;
-        }
     }
 
     private void writeJsonOkResponse(Object value, HttpServletResponse resp) throws IOException {

@@ -23,6 +23,9 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * An immutable holder for type-safe manipulation of <a
  * href="https://en.wikipedia.org/wiki/VAT_identification_number">VAT
@@ -61,6 +64,7 @@ public class VATIN {
      * @throws IllegalArgumentException
      *             When the VAT number is invalid.
      */
+    @JsonCreator
     public VATIN(String number) throws IllegalArgumentException {
         super();
         checkArgument(VALIDATOR.apply(number), "Illegal VAT Identification Number: [%s]", number);
@@ -70,6 +74,7 @@ public class VATIN {
     /**
      * @return The VAT Identificaiton Number.
      */
+    @JsonValue
     public String getNumber() {
         return number;
     }
