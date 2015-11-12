@@ -20,7 +20,8 @@
     <parent>
         <groupId>org.kill-bill.billing</groupId>
         <artifactId>killbill-oss-parent</artifactId>
-        <version>0.57</version>
+        <!-- We need at least version 0.33 to get the 'killbill-base-plugin' version 0.2.0 -->
+        <version>0.33</version>
     </parent>
 
     <groupId>org.kill-bill.billing.plugin.java</groupId>
@@ -160,40 +161,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>cobertura-maven-plugin</artifactId>
-                <configuration>
-                    <instrumentation>
-                        <excludes>
-                            <exclude>org/killbill/billing/plugin/simpletax/**/Test*.class</exclude>
-                            <exclude>org/killbill/billing/plugin/simpletax/resolving/fixtures/**/*.class</exclude>
-                            <exclude>org/killbill/billing/test/helpers/**/*.class</exclude>
-                        </excludes>
-                    </instrumentation>
-                    <check>
-                        <branchRate>85</branchRate>
-                        <lineRate>85</lineRate>
-                        <haltOnFailure>true</haltOnFailure>
-                        <totalBranchRate>85</totalBranchRate>
-                        <totalLineRate>85</totalLineRate>
-                        <packageLineRate>85</packageLineRate>
-                        <packageBranchRate>85</packageBranchRate>
-                    </check>
-                    <formats>
-                        <format>html</format>
-                        <format>xml</format>
-                    </formats>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>clean</goal>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
@@ -225,7 +192,6 @@
                             org.killbill.billing.osgi.api.config;
                             org.killbill.billing.payment.api;
                             org.killbill.billing.payment.plugin.api;
-                            org.killbill.billing.routing.plugin.api;
                             org.killbill.billing.tenant.api;
                             org.killbill.billing.usage.api;
                             org.killbill.billing.util.api;
@@ -242,6 +208,10 @@
                             version="[0,3)",
                             *;resolution:=optional
                         </Import-Package>
+                        <!--
+                        With 'killbill-oss-parent' version 0.51 and above, we also need the following import:
+                            org.killbill.billing.routing.plugin.api;
+                        -->
                     </instructions>
                 </configuration>
             </plugin>
@@ -290,14 +260,5 @@
                 </executions>
             </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>cobertura-maven-plugin</artifactId>
-                    <version>2.7</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 </project>

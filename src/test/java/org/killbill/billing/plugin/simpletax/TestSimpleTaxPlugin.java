@@ -347,7 +347,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -369,7 +369,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -390,7 +390,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceA, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -420,7 +420,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -434,7 +434,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceC, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -448,7 +448,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -462,7 +462,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -482,7 +482,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -507,7 +507,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -529,7 +529,7 @@ public class TestSimpleTaxPlugin {
                 .thenReturn(null);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -551,7 +551,7 @@ public class TestSimpleTaxPlugin {
                 .thenReturn(ImmutableList.<CustomField> of());
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -576,7 +576,7 @@ public class TestSimpleTaxPlugin {
                         .withFieldName("no-tax-field-name").withFieldValue("VAT_20_0%").build()));
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -590,7 +590,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect no exception
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
     }
 
     @Test(groups = "fast")
@@ -601,7 +601,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect no exception
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
     }
 
     @Test(groups = "fast")
@@ -612,7 +612,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InstantiationException.class));
     }
@@ -625,7 +625,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InvocationTargetException.class));
     }
@@ -638,7 +638,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(ExceptionInInitializerError.class));
     }
@@ -653,7 +653,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoiceD, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoiceD, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -672,7 +672,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -718,7 +718,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -734,7 +734,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceH, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);

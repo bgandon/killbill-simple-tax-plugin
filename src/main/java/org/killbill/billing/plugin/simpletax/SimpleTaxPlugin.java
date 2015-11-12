@@ -60,9 +60,9 @@ import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
-import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
-import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
 import org.killbill.billing.plugin.simpletax.util.CheckedLazyValue;
+import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
+import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
 import org.killbill.billing.util.api.CustomFieldApiException;
 import org.killbill.billing.util.api.CustomFieldUserApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -169,8 +169,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      *         {@code null} elements.
      */
     @Override
-    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, boolean dryRun,
-            Iterable<PluginProperty> properties, CallContext callCtx) {
+    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, Iterable<PluginProperty> properties,
+            CallContext callCtx) {
 
         TaxComputationContext taxCtx = createTaxComputationContext(newInvoice, callCtx);
         TaxResolver taxResolver = instanciateTaxResolver(taxCtx);
