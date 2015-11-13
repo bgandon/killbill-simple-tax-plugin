@@ -133,8 +133,8 @@ public class TestInvoiceItemEndDateBasedResolver {
     }
 
     private TaxResolver resolverWithConfig(SimpleTaxConfig cfg) {
-        TaxComputationContext ctx = new TaxComputationContext(cfg, account, allInvoices, toAdjustedAmount,
-                byAdjustedAmount, taxCodeService);
+        TaxComputationContext ctx = new TaxComputationContext(cfg, account, null, allInvoices,
+                toAdjustedAmount, byAdjustedAmount, taxCodeService);
         return new InvoiceItemEndDateBasedResolver(ctx);
     }
 

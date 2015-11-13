@@ -67,11 +67,12 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         super.start(context);
 
         createDefaultConfig();
+        CustomFieldService customFieldService = createCustomFieldService();
 
-        InvoicePluginApi plugin = createPlugin();
+        InvoicePluginApi plugin = createPlugin(customFieldService);
         register(InvoicePluginApi.class, plugin, context);
 
-        HttpServlet servlet = createServlet();
+        HttpServlet servlet = createServlet(customFieldService);
         register(Servlet.class, servlet, context);
     }
 
@@ -106,13 +107,17 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         configHandler.setDefaultConfigurable(defaultConfig);
     }
 
-    private InvoicePluginApi createPlugin() {
-        Clock clock = new DefaultClock();
-        return new SimpleTaxPlugin(configHandler, killbillAPI, getConfigService(), logService, clock);
+    private CustomFieldService createCustomFieldService() {
+        return new CustomFieldService(killbillAPI.getCustomFieldUserApi(), logService);
     }
 
-    private HttpServlet createServlet() {
-        CustomFieldService customFieldService = new CustomFieldService(killbillAPI.getCustomFieldUserApi(), logService);
+    private InvoicePluginApi createPlugin(CustomFieldService customFieldService) {
+        Clock clock = new DefaultClock();
+        return new SimpleTaxPlugin(configHandler, customFieldService, killbillAPI, getConfigService(), logService,
+                clock);
+    }
+
+    private HttpServlet createServlet(CustomFieldService customFieldService) {
         TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
         VatinController vatinController = new VatinController(customFieldService, logService);
         return new SimpleTaxServlet(vatinController, taxCountryController);

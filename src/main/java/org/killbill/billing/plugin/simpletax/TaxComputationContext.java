@@ -23,6 +23,7 @@ import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 
 import com.google.common.base.Function;
@@ -50,11 +51,15 @@ import com.google.common.collect.Ordering;
  *
  * @author Benjamin Gandon
  */
+/**
+ * @author Benjamin Gandon
+ */
 public class TaxComputationContext {
 
     private SimpleTaxConfig config;
 
     private Account account;
+    private Country accountTaxCountry;
 
     private Set<Invoice> allInvoices;
 
@@ -71,6 +76,8 @@ public class TaxComputationContext {
      *            The plugin configuration.
      * @param account
      *            The account that the newly created invoice relates to.
+     * @param accountTaxCountry
+     *            The tax country for the given account.
      * @param allInvoices
      *            The set of all invoices for the given account.
      * @param toAdjustedAmount
@@ -82,12 +89,13 @@ public class TaxComputationContext {
      * @param taxCodeService
      *            The tax code service to use.
      */
-    public TaxComputationContext(SimpleTaxConfig config, Account account, Set<Invoice> allInvoices,
-            Function<InvoiceItem, BigDecimal> toAdjustedAmount, Ordering<InvoiceItem> byAdjustedAmount,
-            TaxCodeService taxCodeService) {
+    public TaxComputationContext(SimpleTaxConfig config, Account account, Country accountTaxCountry,
+            Set<Invoice> allInvoices, Function<InvoiceItem, BigDecimal> toAdjustedAmount,
+            Ordering<InvoiceItem> byAdjustedAmount, TaxCodeService taxCodeService) {
         super();
         this.config = config;
         this.account = account;
+        this.accountTaxCountry = accountTaxCountry;
         this.allInvoices = allInvoices;
         this.toAdjustedAmount = toAdjustedAmount;
         this.byAdjustedAmount = byAdjustedAmount;
@@ -106,6 +114,13 @@ public class TaxComputationContext {
      */
     public Account getAccount() {
         return account;
+    }
+
+    /**
+     * @return The tax country for the {@linkplain #getAccount() given account}.
+     */
+    public Country getAccountTaxCountry() {
+        return accountTaxCountry;
     }
 
     /**

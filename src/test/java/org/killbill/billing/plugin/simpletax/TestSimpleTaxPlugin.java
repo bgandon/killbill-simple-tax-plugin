@@ -29,9 +29,9 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.killbill.billing.ErrorCode.CAT_NO_SUCH_PLAN;
 import static org.killbill.billing.ErrorCode.UNEXPECTED_ERROR;
 import static org.killbill.billing.ErrorCode.__UNKNOWN_ERROR_CODE;
+import static org.killbill.billing.ObjectType.ACCOUNT;
 import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.catalog.api.Currency.EUR;
-import static org.killbill.billing.catalog.api.Currency.USD;
 import static org.killbill.billing.invoice.api.InvoiceItemType.EXTERNAL_CHARGE;
 import static org.killbill.billing.invoice.api.InvoiceItemType.ITEM_ADJ;
 import static org.killbill.billing.invoice.api.InvoiceItemType.RECURRING;
@@ -40,6 +40,7 @@ import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.killbill.billing.plugin.simpletax.config.TestSimpleTaxConfig.TAX_RESOLVER_PROP;
+import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_COUNTRY_CUSTOM_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 import static org.killbill.billing.test.helpers.Promise.holder;
@@ -55,6 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.osgi.service.log.LogService.LOG_ERROR;
@@ -83,6 +85,7 @@ import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.payment.api.Payment;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.AbstractTaxResolver;
@@ -111,6 +114,7 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.base.Predicate;
@@ -126,6 +130,9 @@ import com.google.common.collect.ImmutableSet;
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxPlugin {
 
+    private static final String VAT_20_0 = "VAT_20_0%";
+    private static final String FR = "FR";
+    private static final String US = "US";
     private static final BigDecimal TWO = new BigDecimal("2.00");
     private static final BigDecimal SIX = new BigDecimal("6.00");
     private static final BigDecimal SEVEN = new BigDecimal("7.00");
@@ -144,6 +151,8 @@ public class TestSimpleTaxPlugin {
     @Mock
     private CatalogUserApi catalogUserApi;
 
+    @Mock
+    private CustomFieldService customFieldService;
     private OSGIKillbillAPI services;
     private AccountUserApi accountUserApi;
     @Mock
@@ -157,10 +166,8 @@ public class TestSimpleTaxPlugin {
     private Account account;
     private Invoice invoiceA, invoiceB, invoiceC, invoiceD, invoiceE, invoiceF, invoiceG, invoiceH;
 
-    private Promise<InvoiceItem> tax1 = holder(), tax2 = holder(), tax3 = holder();
-    private Promise<InvoiceItem> taxableA = holder(), taxableB = holder(),//
-            taxableC = holder(), taxableD = holder(), taxableE = holder(),//
-            taxableF = holder(), taxableG = holder(), taxableH = holder();
+    private Promise<InvoiceItem> tax1, tax2, tax3;
+    private Promise<InvoiceItem> taxableA, taxableB, taxableC, taxableD, taxableE, taxableF, taxableG, taxableH;
 
     private List<CustomField> taxFields = newArrayList();
 
@@ -172,9 +179,13 @@ public class TestSimpleTaxPlugin {
 
     @BeforeClass(groups = "fast")
     public void init() throws Exception {
+    }
+
+    @BeforeMethod(groups = "fast")
+    public void setup() throws Exception {
         initMocks(this);
 
-        account = buildAccount(EUR, "FR");
+        account = createAccount(FR);
 
         services = buildOSGIKillbillAPI(account, mock(Payment.class), null);
         accountUserApi = services.getAccountUserApi();
@@ -186,24 +197,54 @@ public class TestSimpleTaxPlugin {
         ImmutableMap.Builder<String, String> cfg = ImmutableMap.builder();
         String pfx = PROPERTY_PREFIX;
         cfg.put(pfx + "taxResolver", InvoiceItemEndDateBasedResolver.class.getName());
-        String taxCode = "VAT_20_0%";
-        cfg.put(pfx + "taxCodes." + taxCode + ".taxItem.description", "Test VAT");
-        cfg.put(pfx + "taxCodes." + taxCode + ".rate", "0.20");
-        cfg.put(pfx + "taxCodes." + taxCode + ".country", "FR");
-        cfg.put(pfx + "products.planA-product", "VAT_20_0%");
+        cfg.put(pfx + "taxCodes." + VAT_20_0 + ".taxItem.description", "Test VAT");
+        cfg.put(pfx + "taxCodes." + VAT_20_0 + ".rate", "0.20");
+        cfg.put(pfx + "taxCodes." + VAT_20_0 + ".country", FR);
+        cfg.put(pfx + "products.planA-product", VAT_20_0);
 
         plugin = pluginForConfig(cfg.build());
 
-        initInvoices(taxCode);
+        initInvoices(VAT_20_0);
+    }
+
+    private Account createAccount(String taxCountry) {
+        Account account = buildAccount(EUR, "ZZ");
+        withTaxCountryOf(taxCountry, account);
+        return account;
+    }
+
+    private void withTaxCountryOf(String taxCountry, Account account) {
+        UUID accountId = account.getId();
+        when(
+                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME),
+                        eq(accountId), any(TenantContext.class)))//
+                .thenReturn(new CustomFieldBuilder()//
+                        .withObjectType(ACCOUNT)//
+                        .withObjectId(accountId)//
+                        .withFieldName(TAX_COUNTRY_CUSTOM_FIELD_NAME)//
+                        .withFieldValue(taxCountry)//
+                        .build());
     }
 
     private SimpleTaxPlugin pluginForConfig(Map<String, String> cfg) {
         SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, services, logService);
         cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(cfg, logService));
-        return new SimpleTaxPlugin(cfgHandler, services, cfgService, logService, clock);
+        return new SimpleTaxPlugin(cfgHandler, customFieldService, services, cfgService, logService, clock);
     }
 
     private void initInvoices(String taxCode) {
+        tax1 = holder();
+        tax2 = holder();
+        tax3 = holder();
+        taxableA = holder();
+        taxableB = holder();
+        taxableC = holder();
+        taxableD = holder();
+        taxableE = holder();
+        taxableF = holder();
+        taxableG = holder();
+        taxableH = holder();
+
         CustomFieldBuilder twentyPerCentVatFieldBuilder = new CustomFieldBuilder()//
                 .withObjectType(INVOICE_ITEM)//
                 .withFieldName(TAX_CODES_FIELD_NAME)//
@@ -442,8 +483,9 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldCreateNewTaxItemsInHistoricalInvoicesWithAdjustments() {
+    public void shouldCreateNewTaxItemsInHistoricalInvoicesWithAdjustments() throws Exception {
         // Given
+        initCatalogStub();
         Invoice newInvoice = invoiceD;
         withInvoices(invoiceE, newInvoice);
 
@@ -516,7 +558,7 @@ public class TestSimpleTaxPlugin {
     @Test(groups = "fast")
     public void shouldSupportNullListOfCustomFields() throws Exception {
         // Given
-        Account accountWithNullCustomFields = buildAccount(EUR, "FR");
+        Account accountWithNullCustomFields = createAccount(FR);
         UUID accountId = accountWithNullCustomFields.getId();
         when(accountUserApi.getAccountById(accountId, context)).thenReturn(accountWithNullCustomFields);
 
@@ -538,7 +580,7 @@ public class TestSimpleTaxPlugin {
     @Test(groups = "fast")
     public void shouldAllowEmptyListOfCustomFields() throws Exception {
         // Given
-        Account accountNoCustomFields = buildAccount(EUR, "FR");
+        Account accountNoCustomFields = createAccount(FR);
         UUID accountId = accountNoCustomFields.getId();
         when(accountUserApi.getAccountById(accountId, context)).thenReturn(accountNoCustomFields);
 
@@ -560,7 +602,7 @@ public class TestSimpleTaxPlugin {
     @Test(groups = "fast")
     public void shouldAllowNonTaxRelatedCustomFields() throws Exception {
         // Given
-        Account accountNonTaxFields = buildAccount(EUR, "FR");
+        Account accountNonTaxFields = createAccount(FR);
         UUID accountId = accountNonTaxFields.getId();
         when(accountUserApi.getAccountById(accountId, context)).thenReturn(accountNonTaxFields);
 
@@ -573,7 +615,7 @@ public class TestSimpleTaxPlugin {
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(asList(new CustomFieldBuilder()//
                         .withObjectType(INVOICE_ITEM).withObjectId(item.get().getId())//
-                        .withFieldName("no-tax-field-name").withFieldValue("VAT_20_0%").build()));
+                        .withFieldName("no-tax-field-name").withFieldValue(VAT_20_0).build()));
 
         // When
         List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
@@ -658,7 +700,7 @@ public class TestSimpleTaxPlugin {
         // Then
         assertEquals(items.size(), 0);
         verify(logService).log(eq(LOG_ERROR),
-                argThat(allOf(containsStringIgnoringCase("cannot add custom field"), containsString("VAT_20_0%"))),
+                argThat(allOf(containsStringIgnoringCase("cannot add custom field"), containsString(VAT_20_0))),
                 any(CustomFieldApiException.class));
         verifyNoMoreInteractions(logService);
     }
@@ -694,7 +736,7 @@ public class TestSimpleTaxPlugin {
         assertEquals(customField.getObjectType(), INVOICE_ITEM);
         assertEquals(customField.getObjectId(), taxableF.get().getId());
         assertEquals(customField.getFieldName(), "taxCodes");
-        assertEquals(customField.getFieldValue(), "VAT_20_0%");
+        assertEquals(customField.getFieldValue(), VAT_20_0);
     }
 
     @Test(groups = "fast")
@@ -703,7 +745,7 @@ public class TestSimpleTaxPlugin {
         CallContext context = mock(CallContext.class);
         initCatalogStub();
 
-        Account account = buildAccount(USD, "US");
+        Account account = createAccount(US);
         when(accountUserApi.getAccountById(eq(account.getId()), eq(context))).thenReturn(account);
 
         Promise<InvoiceItem> taxable = holder();
@@ -724,6 +766,75 @@ public class TestSimpleTaxPlugin {
         assertEquals(items.size(), 0);
 
         verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
+    }
+
+    @Test(groups = "fast")
+    public void shouldSurviveNoCustomFieldForTaxCountry() throws Exception {
+        // Given
+        CallContext context = mock(CallContext.class);
+        initCatalogStub();
+
+        Account account = createAccount("ZZ-boom!");
+        UUID accountId = account.getId();
+        when(
+                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME),
+                        eq(accountId), any(TenantContext.class)))//
+                .thenReturn(null);
+        when(accountUserApi.getAccountById(eq(accountId), eq(context))).thenReturn(account);
+
+        Promise<InvoiceItem> taxable = holder();
+        Invoice newInvoice = new InvoiceBuilder(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(RECURRING).withPlanName("planA").withAmount(SIX)//
+                        .withStartDate(lastMonth).withEndDate(today)//
+                        .thenSaveTo(taxable))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(ITEM_ADJ).withLinkedItem(taxable).withAmount(ONE.negate()))//
+                .build();
+        withInvoices(newInvoice);
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+
+        verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
+        verifyZeroInteractions(logService);
+    }
+
+    @Test(groups = "fast")
+    public void shouldComplainOnInvalidTaxCountry() throws Exception {
+        // Given
+        CallContext context = mock(CallContext.class);
+        initCatalogStub();
+
+        Account account = createAccount("ZZ-boom!");
+        when(accountUserApi.getAccountById(eq(account.getId()), eq(context))).thenReturn(account);
+
+        Promise<InvoiceItem> taxable = holder();
+        Invoice newInvoice = new InvoiceBuilder(account)//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(RECURRING).withPlanName("planA").withAmount(SIX)//
+                        .withStartDate(lastMonth).withEndDate(today)//
+                        .thenSaveTo(taxable))//
+                .withItem(new InvoiceItemBuilder()//
+                        .withType(ITEM_ADJ).withLinkedItem(taxable).withAmount(ONE.negate()))//
+                .build();
+        withInvoices(newInvoice);
+
+        // When
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+
+        // Then
+        assertEquals(items.size(), 0);
+
+        verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
+        String accountIdString = account.getId().toString();
+        verify(logService)
+                .log(eq(LOG_ERROR),
+                        argThat(allOf(containsString("ZZ-boom!"), containsString("taxCountry"),
+                                containsString(accountIdString))), any(IllegalArgumentException.class));
     }
 
     @Test(groups = "fast")

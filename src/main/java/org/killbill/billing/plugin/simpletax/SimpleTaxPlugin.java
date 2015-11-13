@@ -29,6 +29,7 @@ import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createAdjustmentItem;
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createTaxItem;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.DEFAULT_TAX_ITEM_DESC;
+import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_COUNTRY_CUSTOM_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.amountWithAdjustments;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.sumAmounts;
@@ -54,6 +55,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
+import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
 import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
@@ -109,12 +111,15 @@ import com.google.common.collect.SetMultimap;
 public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
     private SimpleTaxConfigurationHandler configHandler;
+    private CustomFieldService customFieldService;
 
     /**
      * Creates a new simple-tax plugin.
      *
      * @param configHandler
      *            The configuration handler to use for this plugin instance.
+     * @param customFieldService
+     *            The service to use when accessing custom fields.
      * @param metaApi
      *            The Kill Bill meta-API.
      * @param configService
@@ -125,10 +130,12 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
      * @param clockService
      *            The clock service to use when accessing the current time.
      */
-    public SimpleTaxPlugin(SimpleTaxConfigurationHandler configHandler, OSGIKillbillAPI metaApi,
-            OSGIConfigPropertiesService configService, OSGIKillbillLogService logService, Clock clockService) {
+    public SimpleTaxPlugin(SimpleTaxConfigurationHandler configHandler, CustomFieldService customFieldService,
+            OSGIKillbillAPI metaApi, OSGIConfigPropertiesService configService, OSGIKillbillLogService logService,
+            Clock clockService) {
         super(metaApi, configService, logService, clockService);
         this.configHandler = configHandler;
+        this.customFieldService = customFieldService;
     }
 
     /**
@@ -205,7 +212,19 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
         SimpleTaxConfig cfg = configHandler.getConfigurable(tenantCtx.getTenantId());
 
-        Account account = getAccount(newInvoice.getAccountId(), tenantCtx);
+        UUID accountId = newInvoice.getAccountId();
+        Account account = getAccount(accountId, tenantCtx);
+        CustomField taxCountryField = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+                TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantCtx);
+        Country accountTaxCountry = null;
+        if (taxCountryField != null) {
+            try {
+                accountTaxCountry = new Country(taxCountryField.getFieldValue());
+            } catch (IllegalArgumentException exc) {
+                logService.log(LOG_ERROR, "Illegal value of [" + taxCountryField.getFieldValue() + "] in field '"
+                        + TAX_COUNTRY_CUSTOM_FIELD_NAME + "' for account " + accountId, exc);
+            }
+        }
 
         Set<Invoice> allInvoices = allInvoicesOfAccount(account, newInvoice, tenantCtx);
 
@@ -214,7 +233,8 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
 
         TaxCodeService taxCodeService = taxCodeService(account, allInvoices, cfg, tenantCtx);
 
-        return new TaxComputationContext(cfg, account, allInvoices, toAdjustedAmount, byAdjustedAmount, taxCodeService);
+        return new TaxComputationContext(cfg, account, accountTaxCountry, allInvoices, toAdjustedAmount,
+                byAdjustedAmount, taxCodeService);
     }
 
     /**
@@ -440,11 +460,13 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
                 continue;
             }
 
+            final String accountTaxCountry = taxCtx.getAccountTaxCountry() == null ? null : taxCtx
+                    .getAccountTaxCountry().getCode();
             Iterable<TaxCode> expectedInAccountCountry = filter(expectedTaxCodes, new Predicate<TaxCode>() {
                 @Override
                 public boolean apply(TaxCode taxCode) {
                     Country restrict = taxCode.getCountry();
-                    return (restrict == null) || restrict.getCode().equals(taxCtx.getAccount().getCountry());
+                    return (restrict == null) || restrict.getCode().equals(accountTaxCountry);
                 }
             });
             // resolve tax codes using regulation-specific logic
@@ -465,7 +487,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi {
             } catch (CustomFieldApiException exc) {
                 logService.log(LOG_ERROR,
                         "Cannot add custom field [" + field.getFieldName() + "] with value [" + field.getFieldValue()
-                        + "] to invoice item [" + item.getId() + "] of invoice [" + newInvoice.getId() + "]",
+                                + "] to invoice item [" + item.getId() + "] of invoice [" + newInvoice.getId() + "]",
                         exc);
             }
             newTaxCodes.put(item.getId(), applicableCode);

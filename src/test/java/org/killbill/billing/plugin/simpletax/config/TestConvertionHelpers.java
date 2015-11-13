@@ -25,6 +25,7 @@ import static org.joda.time.DateTimeZone.forID;
 import static org.joda.time.DateTimeZone.forOffsetHours;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.convertTimeZone;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.country;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.joinTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
@@ -44,6 +45,7 @@ import java.util.Map;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
+import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
@@ -75,6 +77,11 @@ public class TestConvertionHelpers {
     private static final DateTimeZone PARIS = forID(EUROPE_PARIS);
     private static final DateTimeZone LONDON = forID(EUROPE_LONDON);
 
+    private static final String FR = "FR";
+    private static final String US = "US";
+    private static final Country FRANCE = new Country(FR);
+    private static final Country USA = new Country(US);
+
     private final LocalDate today = new LocalDate();
     private final LocalDate yesterday = today.minusDays(1);
     private final String nullClass = NullTaxResolver.class.getName();
@@ -90,11 +97,6 @@ public class TestConvertionHelpers {
 
     private static Map<String, String> cfgOf(String key, String val) {
         return ImmutableMap.of(key, val);
-    }
-
-    @Test(groups = "fast", expectedExceptions = InstantiationException.class)
-    public void shouldBeAbstractClass() throws Exception {
-        ConvertionHelpers.class.getConstructor().newInstance();
     }
 
     @Test(groups = "fast")
@@ -236,6 +238,16 @@ public class TestConvertionHelpers {
 
         assertEquals(timeZone(cfgOf("tz", UTC_PLUS_ONE), "tz", null), UTC_OFFSET_ONE);
         assertEquals(timeZone(cfgOf("tz", "\t" + UTC_PLUS_ONE + ' '), "tz", LONDON), UTC_OFFSET_ONE);
+    }
+
+    @Test(groups = "fast")
+    public void shouldConvertCountryWithTrimming() {
+        // Expect
+        assertEquals(country(cfgOf("country", FR), "country", USA), FRANCE);
+        assertEquals(country(cfgOf("country", US), "country", FRANCE), USA);
+        assertEquals(country(cfgOf("country", " FR\t"), "country", USA), FRANCE);
+        assertEquals(country(cfgOf("country", "\t"), "country", FRANCE), FRANCE);
+        assertEquals(country(cfgOf("country", "boom"), "country", USA), USA);
     }
 
     @Test(groups = "fast", expectedExceptions = NullPointerException.class)

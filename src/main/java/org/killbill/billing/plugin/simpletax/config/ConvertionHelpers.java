@@ -58,7 +58,9 @@ import com.google.common.collect.ImmutableSet;
  *
  * @author Benjamin Gandon
  */
-public abstract class ConvertionHelpers {
+public final class ConvertionHelpers {
+    private ConvertionHelpers() {
+    }
 
     /**
      * Constructs a {@link BigDecimal} instance from a configuration property,
@@ -277,7 +279,7 @@ public abstract class ConvertionHelpers {
             return defaultCountry;
         }
         try {
-            return new Country(countryCode);
+            return new Country(trim(countryCode));
         } catch (IllegalArgumentException e) {
             return defaultCountry;
         }

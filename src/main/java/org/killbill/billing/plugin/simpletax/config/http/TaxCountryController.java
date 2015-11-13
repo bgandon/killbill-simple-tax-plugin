@@ -17,6 +17,7 @@
 package org.killbill.billing.plugin.simpletax.config.http;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_COUNTRY_CUSTOM_FIELD_NAME;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 
 import java.util.List;
@@ -42,8 +43,6 @@ import com.google.common.collect.ImmutableList;
  * @author Benjamin Gandon
  */
 public class TaxCountryController {
-    private static final String TAX_COUNTRY_CUSTOM_FIELD_NAME = "taxCountry";
-
     private OSGIKillbillLogService logService;
     private CustomFieldService customFieldService;
 
