@@ -105,10 +105,9 @@ org.killbill.billing.plugin.simpletax.products.Gas = VAT_FR_2012_20_0%, VAT_FR_2
 Upcoming improvements
 ---------------------
 
-1. Implement conditional taxes, based on account country
-2. Allow editing the VAT numbers attached to accounts
-3. Have the precision of tax amounts depend on the currency used
-4. Have i18n for tax items descriptions
+1. Allow editing the tax codes of invoice items
+2. Have the precision of tax amounts depend on the currency used
+3. Have i18n for tax items descriptions
 
 
 Building and Installing
@@ -137,7 +136,7 @@ cp -v ~/.m2/repository/org/kill-bill/billing/plugin/java/simple-tax-plugin/$VERS
 Author and License
 ------------------
 
-Copyright © 2015, Benjamin Gandon
+Copyright © 2015-2016, Benjamin Gandon
 
 As the rest of the Kill Bill platform, this simple tax plugin is released
 under the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
