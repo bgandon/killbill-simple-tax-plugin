@@ -101,6 +101,73 @@ org.killbill.billing.plugin.simpletax.products.Gas = VAT_FR_2012_20_0%, VAT_FR_2
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
+The plugin also provides the following REST endpoints to tweak invoice item taxation in more details.
+
+```
+GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
+PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
+GET /vatins
+GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
+
+GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+GET /taxCountries
+GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+```
+
+The “vatin” endpoints allow assigning [VAT Identification Numbers](https://en.wikipedia.org/wiki/VAT_identification_number)
+to accounts. The JSON payload for vatins follows this structure:
+
+```json
+{
+  "accountId": "<UUID>",
+  "vatin": "<VATIN>"
+}
+```
+
+
+The “taxCountry” endpoints allow assigning a [two-letter country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
+to an account. Tax codes that are restricted to specific countries will only
+apply to accounts that have the same country codes for their tax countries.
+(And tax codes not restricted to any country are considered global; they apply
+to all accounts.) The JSON payload for tax countries follows this structure:
+
+```json
+{
+  "accountId": "<UUID>",
+  "taxCountry": "<2-Letter-Country-Code>"
+}
+```
+
+
+Upcomming REST endpoints:
+
+```
+GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+
+GET /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+```
+
+Payload structure for tax codes:
+
+```json
+{
+  "invoiceItemId": "<UUID>",
+  "invoiceId": "<UUID>",
+  "taxCodes": [
+    {
+      "name": "<code-1>"
+    },
+    {
+      "name": "<code-2>"
+    },
+    ...
+  ]
+}
+```
+
 
 Upcoming improvements
 ---------------------
