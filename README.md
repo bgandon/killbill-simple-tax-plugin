@@ -65,11 +65,11 @@ org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.rate = 0.070
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.startingOn = 2012-01-01
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.stoppingOn = 2014-01-01
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_20_0%.taxItem.description = VAT 19.6%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_20_0%.rate = 0.196
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_20_0%.startingOn = 2012-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_20_0%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_20_0%.country = FR
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.taxItem.description = VAT 19.6%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.rate = 0.196
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.startingOn = 2012-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.stoppingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.country = FR
 
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.taxItem.description = VAT 2.1%
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.rate = 0.021
@@ -92,12 +92,12 @@ org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.startingOn = 20
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.stoppingOn = 
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.country = FR
 
-org.killbill.billing.plugin.simpletax.products.Standard = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Sport = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Super = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.OilSlick = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Gas = VAT_FR_2012_20_0%, VAT_FR_2014_20_0%' \
+org.killbill.billing.plugin.simpletax.products.Standard =      VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Sport =         VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Super =         VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.OilSlick =      VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_2012_19_6%, VAT_FR_2014_20_0%' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
