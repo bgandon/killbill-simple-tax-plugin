@@ -172,9 +172,13 @@ Payload structure for tax codes:
 Upcoming improvements
 ---------------------
 
-1. Allow editing the tax codes of invoice items
-2. Have the precision of tax amounts depend on the currency used
-3. Have i18n for tax items descriptions
+1. Implement critical user story for European VAT:
+   - B2B that have a valid VAT number aren’t charged VAT
+   - B2B that don’t have a VAT number are charged VAT at their local rate
+2. Build a more comprehensive example configuration that embraces more
+   European countries
+3. Have the precision of tax amounts depend on the currency used
+4. Have i18n for tax items descriptions
 
 
 Building and Installing
