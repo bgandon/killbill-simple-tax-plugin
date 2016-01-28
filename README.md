@@ -30,6 +30,65 @@ of fixed [VAT](https://en.wikipedia.org/wiki/Value-added_tax) rates that can
 change once in a while.
 
 
+How it works
+------------
+
+In this section, the explanations refer to the the example configuration
+below. You’ll need to take a look at it in order to understand how the plugin
+works.
+
+### Cutoff Dates
+
+If you take the example of a “Standard” car in the
+[“SpyCarAdvanced” example catalog](http://docs.killbill.io/0.16/userguide_subscription.html#components-catalog-advanced),
+then the car rental service is subject to a 20% VAT rate in France. But this
+is only valid after 2014-01-01. Before that, from 2012-01-01 (included) to
+2014-01-01 (excluded) it was a 19.6% VAT rate. (And before 2012-01-01, VAT was
+20% but we don’t mind here. Let’s just say we need to deal with taxation for
+services that started being sold in 2013.)
+
+To deal with that cutoff date (which is well known in France, but everybody
+around the world is not supposed to know, sorry for that), the example config
+sets up 2 tax codes : `VAT_FR_2012_19_6%` and then `VAT_FR_2014_20_0%` (Please
+note that the percent sign is just a valid character for a tax code label;
+it’s just plain text with no special meaning.)
+
+If you dig into the details of the first one, you’ll see these properties:
+
+    [...].description = VAT 19.6%
+    [...].rate = 0.196
+    [...].startingOn = 2012-01-01
+    [...].stoppingOn = 2014-01-01
+    [...].country = FR
+
+So the “startingOn” and the “stoppingOn” properly model the cutoff dates to
+apply with that tax rate of 19.6%.
+
+If you read the properties of `VAT_FR_2014_20_0%`, you’ll notice that the
+“stoppingOn” cutoff date is not set. That’s because it’s the current rate to
+apply, and nobody knows yet until when. When the rate will change, the
+“stoppingOn” property will have to be set and a new tax code will have to be
+defined withe the same “startingOn” date in order to properly model the new
+rate. (This comes down to a very important principles in this plugin: tax
+codes should always be considered immutables, except the stoppingOn property
+which is the only one that might change over time.)
+
+Now imagine that our company has charged a car rental from 2013-12-01 until
+2014-01-31 included. Which tax code should apply? Here the `TaxResolver` comes
+into play. Currently it just says: the end date should prevail. Here the end
+date is in 2014, to the new tax rate of 20% will apply.
+
+Had we charged a “Standard” car rental from 2013-12-01 until 2013-12-31, then
+the TaxResolver would have led to a 19.6% VAT rate because 2013-12-31 is in
+2013.
+
+### Tax Countries
+
+The “country” property of a tax code models a territorial restriction: the tax
+codes of the example configuration shall only apply to accounts that have
+“taxCountry” properties of “FR”.
+
+
 Configuration
 -------------
 
