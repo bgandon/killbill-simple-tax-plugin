@@ -71,8 +71,9 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         createDefaultConfig();
         CustomFieldService customFieldService = createCustomFieldService();
 
-        InvoicePluginApi plugin = createPlugin(customFieldService);
+        final SimpleTaxPlugin plugin = createPlugin(customFieldService);
         register(InvoicePluginApi.class, plugin, context);
+        dispatcher.registerEventHandler(plugin);
 
         InvoiceService invoiceService = createInvoiceService();
         HttpServlet servlet = createServlet(customFieldService, invoiceService);
@@ -118,7 +119,7 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         return new InvoiceService(killbillAPI.getInvoiceUserApi(), logService);
     }
 
-    private InvoicePluginApi createPlugin(CustomFieldService customFieldService) {
+    private SimpleTaxPlugin createPlugin(CustomFieldService customFieldService) {
         Clock clock = new DefaultClock();
         return new SimpleTaxPlugin(configHandler, customFieldService, killbillAPI, getConfigService(), logService,
                 clock);

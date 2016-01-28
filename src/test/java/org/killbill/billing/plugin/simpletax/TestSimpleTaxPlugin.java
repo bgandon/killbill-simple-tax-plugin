@@ -18,6 +18,8 @@ package org.killbill.billing.plugin.simpletax;
 
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.googlecode.catchexception.CatchException.catchException;
+import static com.googlecode.catchexception.CatchException.caughtException;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
@@ -30,12 +32,14 @@ import static org.killbill.billing.ErrorCode.CAT_NO_SUCH_PLAN;
 import static org.killbill.billing.ErrorCode.UNEXPECTED_ERROR;
 import static org.killbill.billing.ErrorCode.__UNKNOWN_ERROR_CODE;
 import static org.killbill.billing.ObjectType.ACCOUNT;
+import static org.killbill.billing.ObjectType.INVOICE;
 import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.catalog.api.Currency.EUR;
 import static org.killbill.billing.invoice.api.InvoiceItemType.EXTERNAL_CHARGE;
 import static org.killbill.billing.invoice.api.InvoiceItemType.ITEM_ADJ;
 import static org.killbill.billing.invoice.api.InvoiceItemType.RECURRING;
 import static org.killbill.billing.invoice.api.InvoiceItemType.TAX;
+import static org.killbill.billing.notification.plugin.api.ExtBusEventType.INVOICE_CREATION;
 import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
@@ -59,7 +63,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.osgi.service.log.LogService.LOG_DEBUG;
 import static org.osgi.service.log.LogService.LOG_ERROR;
+import static org.osgi.service.log.LogService.LOG_INFO;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -82,6 +88,7 @@ import org.killbill.billing.catalog.api.StaticCatalog;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
+import org.killbill.billing.notification.plugin.api.ExtBusEvent;
 import org.killbill.billing.payment.api.Payment;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
@@ -354,9 +361,14 @@ public class TestSimpleTaxPlugin {
         });
     }
 
-    private void withInvoices(Invoice... invoices) {
+    private void withInvoices(Invoice... invoices) throws Exception {
         when(invoiceUserApi.getInvoicesByAccount(account.getId(), context))//
                 .thenReturn(asList(invoices));
+
+        for (Invoice invoice : invoices) {
+            UUID invoiceId = invoice.getId();
+            when(invoiceUserApi.getInvoice(eq(invoiceId), any(TenantContext.class))).thenReturn(invoice);
+        }
 
         List<CustomField> fields = fieldsRelatedTo(invoices);
 
@@ -518,7 +530,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldCreateMissingTaxItemInNewlyCreatedInvoiceWithAdjustment() {
+    public void shouldCreateMissingTaxItemInNewlyCreatedInvoiceWithAdjustment() throws Exception {
         // Given
         Invoice newInvoice = invoiceE;
         withInvoices(invoiceD, newInvoice);
@@ -625,7 +637,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldSurviveIllegalTaxResolverWithPrivateConstructor() {
+    public void shouldSurviveIllegalTaxResolverWithPrivateConstructor() throws Exception {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, PrivateConstructorTaxResolver.class.getName()));
@@ -636,7 +648,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldSurviveIllegalTaxResolverWithConstructorAcceptingIncorrectArguments() {
+    public void shouldSurviveIllegalTaxResolverWithConstructorAcceptingIncorrectArguments() throws Exception {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, InvalidConstructorTaxResolver.class.getName()));
@@ -647,7 +659,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldComplainForInstantiationExceptionAtTaxResolverInstanciation() {
+    public void shouldComplainForInstantiationExceptionAtTaxResolverInstanciation() throws Exception {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, AbstractTaxResolver.class.getName()));
@@ -660,7 +672,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldComplainForInvocationTargetExceptionAtTaxResolverInstanciation() {
+    public void shouldComplainForInvocationTargetExceptionAtTaxResolverInstanciation() throws Exception {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, ThrowingTaxResolver.class.getName()));
@@ -673,7 +685,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldComplainForExceptionInInitializerErrorAtTaxResolverInstanciation() {
+    public void shouldComplainForExceptionInInitializerErrorAtTaxResolverInstanciation() throws Exception {
         // Given
         SimpleTaxPlugin plugin = pluginForConfig(ImmutableMap.<String, String> of(//
                 TAX_RESOLVER_PROP, InitFailingTaxResolver.class.getName()));
@@ -686,7 +698,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldComplainForErrorWhileAddingTaxCodes() throws Exception {
+    public void shouldNotComplainForErrorWhileAddingTaxCodes() throws Exception {
         // Given
         CallContext context = mock(CallContext.class);
         initCatalogStub();
@@ -699,6 +711,36 @@ public class TestSimpleTaxPlugin {
 
         // Then
         assertEquals(items.size(), 0);
+        verifyNoMoreInteractions(logService);
+    }
+
+    @Test(groups = "fast")
+    public void shouldComplainForErrorWhilePersistingTaxCodes() throws Exception {
+        // Given
+        initCatalogStub();
+        doThrow(new CustomFieldApiException(UNEXPECTED_ERROR, ""))//
+                .when(customFieldUserApi).addCustomFields(anyListOf(CustomField.class), any(CallContext.class));
+        withInvoices(invoiceD);
+
+        ExtBusEvent event = mock(ExtBusEvent.class);
+        when(event.getEventType()).thenReturn(INVOICE_CREATION);
+        when(event.getObjectType()).thenReturn(INVOICE);
+        UUID invoiceId = invoiceD.getId();
+        when(event.getObjectId()).thenReturn(invoiceId);
+
+        // When
+        catchException(plugin).handleKillbillEvent(event);
+
+        // Then
+        Exception exc = caughtException();
+        assertNotNull(exc);
+        assertEquals(exc.getClass(), RuntimeException.class);
+        assertNotNull(exc.getCause());
+        assertEquals(exc.getCause().getClass(), CustomFieldApiException.class);
+
+        verify(logService).log(eq(LOG_DEBUG), anyString());
+        verify(logService).log(eq(LOG_INFO), anyString());
+
         verify(logService).log(eq(LOG_ERROR),
                 argThat(allOf(containsStringIgnoringCase("cannot add custom field"), containsString(VAT_20_0))),
                 any(CustomFieldApiException.class));
@@ -713,8 +755,15 @@ public class TestSimpleTaxPlugin {
         Invoice newInvoice = invoiceF;
         withInvoices(invoiceD, newInvoice);
 
+        ExtBusEvent event = mock(ExtBusEvent.class);
+        when(event.getEventType()).thenReturn(INVOICE_CREATION);
+        when(event.getObjectType()).thenReturn(INVOICE);
+        UUID invoiceId = newInvoice.getId();
+        when(event.getObjectId()).thenReturn(invoiceId);
+
         // When
         List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        plugin.handleKillbillEvent(event);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -728,7 +777,7 @@ public class TestSimpleTaxPlugin {
 
         assertEquals(items.size(), 1);
 
-        verify(customFieldUserApi).addCustomFields(fields.capture(), eq(context));
+        verify(customFieldUserApi).addCustomFields(fields.capture(), any(CallContext.class));
         assertNotNull(fields.getValue());
         assertEquals(fields.getValue().size(), 1);
 
