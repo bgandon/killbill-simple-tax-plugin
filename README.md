@@ -69,24 +69,28 @@ If you read the properties of `VAT_FR_2014_20_0%`, you’ll notice that the
 apply, and nobody knows yet until when. When the rate will change, the
 “stoppingOn” property will have to be set and a new tax code will have to be
 defined withe the same “startingOn” date in order to properly model the new
-rate. (This comes down to a very important principles in this plugin: tax
-codes should always be considered immutables, except the stoppingOn property
-which is the only one that might change over time.)
+rate.
+
+This comes down to a very important principle in the simple-tax plugin:
+**configured tax codes should always be considered immutables, except their
+“stoppingOn” properties** which are the only one that might change over time.
 
 Now imagine that our company has charged a car rental from 2013-12-01 until
 2014-01-31 included. Which tax code should apply? Here the `TaxResolver` comes
 into play. Currently it just says: the end date should prevail. Here the end
-date is in 2014, to the new tax rate of 20% will apply.
+date is in 2014, so the new tax rate of 20% will apply.
 
 Had we charged a “Standard” car rental from 2013-12-01 until 2013-12-31, then
-the TaxResolver would have led to a 19.6% VAT rate because 2013-12-31 is in
-2013.
+the `TaxResolver` resolution would have led to a 19.6% VAT rate because
+2013-12-31 is in 2013.
 
 ### Tax Countries
 
 The “country” property of a tax code models a territorial restriction: the tax
 codes of the example configuration shall only apply to accounts that have
-“taxCountry” properties of “FR”.
+“taxCountry” properties of “FR”. Any account with no “taxCountry” set or any
+“taxCountry” other than “FR” will not be elligible to any of these French tax
+codes in their invoices.
 
 
 Configuration
