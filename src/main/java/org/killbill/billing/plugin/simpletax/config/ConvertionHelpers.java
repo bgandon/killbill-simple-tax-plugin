@@ -285,7 +285,7 @@ public final class ConvertionHelpers {
         }
     }
 
-    private static final String TAX_CODES_JOIN_SEPARATOR = ", ";
+    public static final String TAX_CODES_JOIN_SEPARATOR = ", ";
     private static final String TAX_CODES_SPLIT_SEPARATORS = TAX_CODES_JOIN_SEPARATOR + "\t\n\f\r";
 
     /**
@@ -296,7 +296,7 @@ public final class ConvertionHelpers {
      *            The comma-separated list of tax codes, identified by their
      *            names. Must not be {@code null}.
      * @return The set of tax codes names, without any duplicates, in the order
-     *         they were listed.
+     *         they were listed. May be empty, but never {@code null}.
      * @throws NullPointerException
      *             when {@code names} is {@code null}.
      */

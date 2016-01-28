@@ -72,6 +72,7 @@ public class TaxCountryController {
      * @return A list of {@linkplain TaxCountryRsc account tax countries
      *         resources}. Never {@code null}.
      */
+    // TODO: return a List<TaxCountryRsc>
     public Object listTaxCountries(@Nullable UUID accountId, Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
@@ -80,7 +81,7 @@ public class TaxCountryController {
             fields = customFieldService.findAllAccountFieldsByFieldNameAndTenant(TAX_COUNTRY_CUSTOM_FIELD_NAME,
                     tenantContext);
         } else {
-            CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+            CustomField field = customFieldService.findFieldByNameAndAccountAndTenant(
                     TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
             if (field == null) {
                 return ImmutableList.of();
@@ -110,10 +111,11 @@ public class TaxCountryController {
      * @return The {@linkplain TaxCountryRsc tax country resource} of the given
      *         account, or {@code null} if none exists.
      */
+    // TODO: return a TaxCountryRsc
     public Object getAccountTaxCountry(@Nonnull UUID accountId, Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
-        CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+        CustomField field = customFieldService.findFieldByNameAndAccountAndTenant(
                 TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
         if (field == null) {
             return null;
@@ -143,6 +145,7 @@ public class TaxCountryController {
         return customFieldService.saveAccountField(newValue, TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantContext);
     }
 
+    // TODO: rename to toTaxCountryRscOrNull
     private TaxCountryRsc toTaxCountryJsonOrNull(@Nonnull UUID accountId, @Nullable String country) {
         Country taxCountry;
         try {
@@ -162,8 +165,10 @@ public class TaxCountryController {
      */
     public static final class TaxCountryRsc {
         /** The identifier of the account this tax country belongs to. */
+        // TODO: have immutable resources. Convert to final field?
         public UUID accountId;
         /** The tax country. */
+        // TODO: have immutable resources. Convert to final field?
         public Country taxCountry;
 
         /**
@@ -176,6 +181,8 @@ public class TaxCountryController {
          */
         @JsonCreator
         public TaxCountryRsc(@JsonProperty("accountId") UUID accountId, @JsonProperty("taxCountry") Country taxCountry) {
+            // TODO: have more reliable resources. Add
+            // Precondition.checkNonNull()
             this.accountId = accountId;
             this.taxCountry = taxCountry;
         }

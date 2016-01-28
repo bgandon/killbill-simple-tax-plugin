@@ -74,6 +74,7 @@ public class VatinController {
      * @return A list of {@linkplain VATINRsc account VAT Identification Number
      *         (VATIN) resources}. Never {@code null}.
      */
+    // TODO: return a List<VATINRsc>
     public Object listVatins(@Nullable UUID accountId, @Nonnull Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
@@ -82,7 +83,7 @@ public class VatinController {
             fields = customFieldService
                     .findAllAccountFieldsByFieldNameAndTenant(VATIN_CUSTOM_FIELD_NAME, tenantContext);
         } else {
-            CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(
+            CustomField field = customFieldService.findFieldByNameAndAccountAndTenant(
                     VATIN_CUSTOM_FIELD_NAME, accountId, tenantContext);
             if (field == null) {
                 return ImmutableList.of();
@@ -112,10 +113,11 @@ public class VatinController {
      * @return The {@linkplain VATINRsc VAT Identification Number resource} of
      *         the given account, or {@code null} if none exists.
      */
+    // TODO: return a VATINRsc
     public Object getAccountVatin(@Nonnull UUID accountId, @Nonnull Tenant tenant) {
         TenantContext tenantContext = new PluginTenantContext(tenant.getId());
 
-        CustomField field = customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(VATIN_CUSTOM_FIELD_NAME,
+        CustomField field = customFieldService.findFieldByNameAndAccountAndTenant(VATIN_CUSTOM_FIELD_NAME,
                 accountId, tenantContext);
         if (field == null) {
             return null;
@@ -167,8 +169,10 @@ public class VatinController {
          * The identifier of the account this VAT Identification Number belongs
          * to.
          */
+        // TODO: have immutable resources. Convert to final field?
         public UUID accountId;
         /** The VAT Identification Number. */
+        // TODO: have immutable resources. Convert to final field?
         public VATIN vatin;
 
         /**
@@ -181,6 +185,8 @@ public class VatinController {
          */
         @JsonCreator
         public VATINRsc(@JsonProperty("accountId") UUID accountId, @JsonProperty("vatin") VATIN vatin) {
+            // TODO: have more reliable resources. Add
+            // Precondition.checkNonNull()
             this.accountId = accountId;
             this.vatin = vatin;
         }

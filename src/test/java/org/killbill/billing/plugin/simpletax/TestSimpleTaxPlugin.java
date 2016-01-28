@@ -216,8 +216,8 @@ public class TestSimpleTaxPlugin {
     private void withTaxCountryOf(String taxCountry, Account account) {
         UUID accountId = account.getId();
         when(
-                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME),
-                        eq(accountId), any(TenantContext.class)))//
+                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME), eq(accountId),
+                        any(TenantContext.class)))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectType(ACCOUNT)//
                         .withObjectId(accountId)//
@@ -777,8 +777,8 @@ public class TestSimpleTaxPlugin {
         Account account = createAccount("ZZ-boom!");
         UUID accountId = account.getId();
         when(
-                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME),
-                        eq(accountId), any(TenantContext.class)))//
+                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME), eq(accountId),
+                        any(TenantContext.class)))//
                 .thenReturn(null);
         when(accountUserApi.getAccountById(eq(accountId), eq(context))).thenReturn(account);
 

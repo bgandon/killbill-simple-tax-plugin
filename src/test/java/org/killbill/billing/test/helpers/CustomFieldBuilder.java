@@ -22,6 +22,18 @@ import org.killbill.billing.ObjectType;
 import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
 import org.killbill.billing.util.customfield.CustomField;
 
+/**
+ * A {@link Builder} to create {@link ImmutableCustomField} instances. This one
+ * is a little bit different from
+ * {@link org.killbill.billing.plugin.simpletax.util.ImmutableCustomField.Builder}
+ * in that it is tailored for being used in tests.
+ * <p>
+ * Indeed, it implements the {@link Builder} interface, and provides helper
+ * methods like {@link #copy(CustomFieldBuilder)} that are useful in the context
+ * of unit tests and would not make sense in real code.
+ *
+ * @author Benjamin Gandon
+ */
 @SuppressWarnings("javadoc")
 public class CustomFieldBuilder implements Builder<CustomField> {
 

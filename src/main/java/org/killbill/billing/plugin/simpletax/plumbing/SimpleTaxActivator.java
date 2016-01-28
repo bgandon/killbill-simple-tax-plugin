@@ -28,7 +28,9 @@ import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHand
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
+import org.killbill.billing.plugin.simpletax.config.http.InvoiceService;
 import org.killbill.billing.plugin.simpletax.config.http.SimpleTaxServlet;
+import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController;
 import org.killbill.billing.plugin.simpletax.config.http.VatinController;
 import org.killbill.clock.Clock;
@@ -72,7 +74,8 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         InvoicePluginApi plugin = createPlugin(customFieldService);
         register(InvoicePluginApi.class, plugin, context);
 
-        HttpServlet servlet = createServlet(customFieldService);
+        InvoiceService invoiceService = createInvoiceService();
+        HttpServlet servlet = createServlet(customFieldService, invoiceService);
         register(Servlet.class, servlet, context);
     }
 
@@ -111,16 +114,21 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         return new CustomFieldService(killbillAPI.getCustomFieldUserApi(), logService);
     }
 
+    private InvoiceService createInvoiceService() {
+        return new InvoiceService(killbillAPI.getInvoiceUserApi(), logService);
+    }
+
     private InvoicePluginApi createPlugin(CustomFieldService customFieldService) {
         Clock clock = new DefaultClock();
         return new SimpleTaxPlugin(configHandler, customFieldService, killbillAPI, getConfigService(), logService,
                 clock);
     }
 
-    private HttpServlet createServlet(CustomFieldService customFieldService) {
+    private HttpServlet createServlet(CustomFieldService customFieldService, InvoiceService invoiceService) {
         TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
         VatinController vatinController = new VatinController(customFieldService, logService);
-        return new SimpleTaxServlet(vatinController, taxCountryController);
+        TaxCodeController taxCodeController = new TaxCodeController(customFieldService, invoiceService, logService);
+        return new SimpleTaxServlet(vatinController, taxCountryController, taxCodeController);
     }
 
     private <S> void register(Class<S> serviceClass, S serviceInstance, BundleContext context) {

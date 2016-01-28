@@ -22,6 +22,7 @@ import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.tryFind;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.killbill.billing.ObjectType.ACCOUNT;
+import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 
@@ -32,6 +33,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
+import org.killbill.billing.ObjectType;
 import org.killbill.billing.plugin.api.PluginCallContext;
 import org.killbill.billing.plugin.simpletax.util.ImmutableCustomField;
 import org.killbill.billing.util.api.CustomFieldApiException;
@@ -77,14 +79,12 @@ public class CustomFieldService {
     }
 
     /**
-     * A predicate that only accepts custom fields on
-     * {@linkplain org.killbill.billing.ObjectType#ACCOUNT account objects} with
-     * a specific name.
+     * A predicate that only accepts custom fields with a specific name.
      */
-    private static class RetainAccountFieldsWithName implements Predicate<CustomField> {
+    private static class RetainFieldsWithName implements Predicate<CustomField> {
         private String fieldName;
 
-        public RetainAccountFieldsWithName(String fieldName) {
+        public RetainFieldsWithName(String fieldName) {
             super();
             checkNotNull(fieldName, "Field name must not be null");
             this.fieldName = fieldName;
@@ -92,7 +92,27 @@ public class CustomFieldService {
 
         @Override
         public boolean apply(CustomField field) {
-            return ACCOUNT.equals(field.getObjectType()) && fieldName.equals(field.getFieldName());
+            return fieldName.equals(field.getFieldName());
+        }
+    }
+
+    /**
+     * A predicate that only accepts custom fields of a given
+     * {@linkplain org.killbill.billing.ObjectType object type} and a specific
+     * name.
+     */
+    private static class RetainFieldsWithNameAndObjectType extends RetainFieldsWithName {
+        private ObjectType objectType;
+
+        public RetainFieldsWithNameAndObjectType(String fieldName, ObjectType objectType) {
+            super(fieldName);
+            checkNotNull(objectType, "Object type must not be null");
+            this.objectType = objectType;
+        }
+
+        @Override
+        public boolean apply(CustomField field) {
+            return objectType.equals(field.getObjectType()) && super.apply(field);
         }
     }
 
@@ -109,7 +129,8 @@ public class CustomFieldService {
     @Nonnull
     public List<CustomField> findAllAccountFieldsByFieldNameAndTenant(String fieldName, TenantContext tenantContext) {
         List<CustomField> fields = newArrayList();
-        Predicate<CustomField> onlyAccountFieldsWithExpectedName = new RetainAccountFieldsWithName(fieldName);
+        Predicate<CustomField> onlyAccountFieldsWithExpectedName = new RetainFieldsWithNameAndObjectType(fieldName,
+                ACCOUNT);
         Pagination<CustomField> page;
         Long nextOffset = START_OFFSET;
         do {
@@ -118,6 +139,17 @@ public class CustomFieldService {
             nextOffset = page.getNextOffset();
         } while (nextOffset != null);
         return fields;
+    }
+
+    @Nullable
+    public CustomField findFieldByNameAndInvoiceItemAndTenant(String fieldName, UUID invoiceItemId,
+            TenantContext tenantContext) {
+        List<CustomField> invoiceItemFields = customFieldApi.getCustomFieldsForObject(invoiceItemId, INVOICE_ITEM,
+                tenantContext);
+        if (invoiceItemFields == null) {
+            return null;
+        }
+        return tryFind(invoiceItemFields, new RetainFieldsWithName(fieldName)).orNull();
     }
 
     /**
@@ -134,13 +166,12 @@ public class CustomFieldService {
      *         field exists.
      */
     @Nullable
-    public CustomField findAccountFieldByFieldNameAndAccountAndTenant(String fieldName, UUID accountId,
-            TenantContext tenantContext) {
+    public CustomField findFieldByNameAndAccountAndTenant(String fieldName, UUID accountId, TenantContext tenantContext) {
         List<CustomField> accountFields = customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
         if (accountFields == null) {
             return null;
         }
-        return tryFind(accountFields, new RetainAccountFieldsWithName(fieldName)).orNull();
+        return tryFind(accountFields, new RetainFieldsWithName(fieldName)).orNull();
     }
 
     /**
@@ -158,8 +189,18 @@ public class CustomFieldService {
      *         {@code false} otherwise.
      */
     public boolean saveAccountField(String fieldValue, String fieldName, UUID accountId, TenantContext tenantContext) {
+        return saveAccountField(fieldValue, fieldName, accountId, ACCOUNT, tenantContext);
+    }
+
+    public boolean saveInvoiceItemField(String fieldValue, String fieldName, UUID invoiceItemId,
+            TenantContext tenantContext) {
+        return saveAccountField(fieldValue, fieldName, invoiceItemId, INVOICE_ITEM, tenantContext);
+    }
+
+    private boolean saveAccountField(String fieldValue, String fieldName, UUID objectId, ObjectType objectType,
+            TenantContext tenantContext) {
         CustomField existing = null;
-        List<CustomField> accountFields = customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, tenantContext);
+        List<CustomField> accountFields = customFieldApi.getCustomFieldsForObject(objectId, objectType, tenantContext);
         if (accountFields != null) {
             for (CustomField field : accountFields) {
                 if (field.getFieldName().equals(fieldName)) {
@@ -182,7 +223,7 @@ public class CustomFieldService {
             }
         }
         CustomField newField = ImmutableCustomField.builder()//
-                .withObjectType(ACCOUNT).withObjectId(accountId)//
+                .withObjectType(objectType).withObjectId(objectId)//
                 .withFieldName(fieldName).withFieldValue(fieldValue)//
                 .build();
         try {
@@ -190,7 +231,7 @@ public class CustomFieldService {
             return true;
         } catch (CustomFieldApiException exc) {
             logService.log(LOG_ERROR, "while adding custom field '" + fieldName + "' with value [" + fieldValue
-                    + "] on account object [" + accountId + "]", exc);
+                    + "] on " + objectType + " object [" + objectId + "]", exc);
             try {
                 // Add back the removed field
                 customFieldApi.addCustomFields(ImmutableList.of(existing), context);

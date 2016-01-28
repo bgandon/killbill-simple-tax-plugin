@@ -134,7 +134,7 @@ public class TestVATINController {
     public void shouldListNoVATIN() {
         // Given
         when(
-                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(anyString(), any(UUID.class),
+                customFieldService.findFieldByNameAndAccountAndTenant(anyString(), any(UUID.class),
                         eq(tenantContext)))//
                 .thenReturn(null);
         // When
@@ -150,7 +150,7 @@ public class TestVATINController {
     public void shouldListVATINOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("VATIdNum")//
@@ -175,7 +175,7 @@ public class TestVATINController {
     public void shouldNotListInvalidVATINOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("VATIdNum")//
@@ -196,7 +196,7 @@ public class TestVATINController {
     public void shouldGetTaxCountry() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("VATIdNum")//
@@ -218,7 +218,7 @@ public class TestVATINController {
     public void shouldGetNoTaxCountry() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(null);
 
         // Expect
@@ -229,7 +229,7 @@ public class TestVATINController {
     public void shouldGetNoTaxCountryWhenInvalid() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("VATIdNum")//

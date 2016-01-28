@@ -132,7 +132,7 @@ public class TestTaxCountryController {
     public void shouldListNoTaxCountry() {
         // Given
         when(
-                customFieldService.findAccountFieldByFieldNameAndAccountAndTenant(anyString(), any(UUID.class),
+                customFieldService.findFieldByNameAndAccountAndTenant(anyString(), any(UUID.class),
                         eq(tenantContext)))//
                 .thenReturn(null);
         // When
@@ -148,7 +148,7 @@ public class TestTaxCountryController {
     public void shouldListTaxCountryOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("taxCountry")//
@@ -173,7 +173,7 @@ public class TestTaxCountryController {
     public void shouldNotListInvalidTaxCountryOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("taxCountry")//
@@ -194,7 +194,7 @@ public class TestTaxCountryController {
     public void shouldGetTaxCountry() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("taxCountry")//
@@ -216,7 +216,7 @@ public class TestTaxCountryController {
     public void shouldGetNoTaxCountry() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(null);
 
         // Expect
@@ -227,7 +227,7 @@ public class TestTaxCountryController {
     public void shouldGetNoTaxCountryWhenInvalid() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findAccountFieldByFieldNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
                         .withFieldName("taxCountry")//

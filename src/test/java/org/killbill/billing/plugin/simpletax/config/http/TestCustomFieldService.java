@@ -173,7 +173,7 @@ public class TestCustomFieldService {
     public void shouldNotAcceptFindingSingleFieldWithNullName() {
 
         // Expect exception
-        service.findAccountFieldByFieldNameAndAccountAndTenant(null, randomUUID(), defaultTenant);
+        service.findFieldByNameAndAccountAndTenant(null, randomUUID(), defaultTenant);
     }
 
     @Test(groups = "fast")
@@ -183,7 +183,7 @@ public class TestCustomFieldService {
         withAccountFields(null, tenant);
 
         // Expect
-        assertNull(service.findAccountFieldByFieldNameAndAccountAndTenant("plop", randomUUID(), tenant));
+        assertNull(service.findFieldByNameAndAccountAndTenant("plop", randomUUID(), tenant));
     }
 
     @Test(groups = "fast")
@@ -195,10 +195,6 @@ public class TestCustomFieldService {
                         new CustomFieldBuilder()//
                                 .withObjectType(ACCOUNT)//
                                 .withFieldName("toto")//
-                                .build(),//
-                        new CustomFieldBuilder()//
-                                .withObjectType(INVOICE)//
-                                .withFieldName("plop")//
                                 .build(),//
                         new CustomFieldBuilder()//
                                 .withObjectType(ACCOUNT)//
@@ -214,7 +210,7 @@ public class TestCustomFieldService {
                                 .build()), tenant);
 
         // When
-        CustomField field = service.findAccountFieldByFieldNameAndAccountAndTenant("plop", randomUUID(), tenant);
+        CustomField field = service.findFieldByNameAndAccountAndTenant("plop", randomUUID(), tenant);
 
         // Then
         assertNotNull(field);

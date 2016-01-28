@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.killbill.billing.plugin.core.PluginServlet;
+import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPOSTRsc;
+import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPUTRsc;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.TaxCountryRsc;
 import org.killbill.billing.plugin.simpletax.config.http.VatinController.VATINRsc;
 import org.killbill.billing.tenant.api.Tenant;
@@ -57,6 +59,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
  * GET /taxCountries
  * GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+ *
+ * GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+ * POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+ *
+ * GET /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+ * PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
  * </pre>
  * <p>
  * We don't use the standard <code>/accounts/{accountId}/customFields</code>
@@ -83,7 +91,7 @@ public class SimpleTaxServlet extends PluginServlet {
 
     private static final String ACCOUNTS_PATH = "/accounts";
     private static final Pattern ACCOUNT_PATTERN = compile(ACCOUNTS_PATH + "/(" + UUID_LOOSE_PATTERN + ")/(\\w+)");
-    private static final int ACCOUNT_ID_GROUP = 1;
+    private static final int RESOURCE_IDENTIFIER_GROUP = 1;
     private static final int RESOURCE_NAME_GROUP = 2;
     private static final String VATIN_RESOURCE_NAME = "vatin";
     private static final String TAX_COUNTRY_RESOURCE_NAME = "taxCountry";
@@ -93,14 +101,35 @@ public class SimpleTaxServlet extends PluginServlet {
     private static final String ACCOUNT_PARAM_NAME = "account";
     private static final Pattern LOOSE_UUID = compile(UUID_LOOSE_PATTERN);
 
+    private static final String INVOICES_PATH = "/invoices";
+    private static final Pattern INVOICE_PATTERN = compile(INVOICES_PATH + "/(" + UUID_LOOSE_PATTERN + ")/(\\w+)");
+    private static final String INVOICE_ITEMS_PATH = "/invoiceItems";
+    private static final Pattern INVOICE_ITEM_PATTERN = compile(INVOICE_ITEMS_PATH + "/(" + UUID_LOOSE_PATTERN
+            + ")/(\\w+)");
+    private static final String TAX_CODES_RESOURCE_NAME = "taxCodes";
+
     private static String accountResourceUri(UUID accountId, String resourceName) {
-        return PLUGIN_BASE_PATH + ACCOUNTS_PATH + '/' + accountId + '/' + resourceName;
+        return resourceUri(ACCOUNTS_PATH, accountId, resourceName).toString();
+    }
+
+    private static String invoiceResourceUri(UUID invoiceId, String resourceName) {
+        return resourceUri(INVOICES_PATH, invoiceId, resourceName).toString();
+    }
+
+    private static String invoiceItemResourceUri(UUID invoiceItemId, String resourceName) {
+        return resourceUri(INVOICE_ITEMS_PATH, invoiceItemId, resourceName).toString();
+    }
+
+    private static StringBuilder resourceUri(String resourceName, UUID identifier, String subResourceName) {
+        return new StringBuilder(PLUGIN_BASE_PATH).append(resourceName).append('/').append(identifier).append('/')
+                .append(subResourceName);
     }
 
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private TaxCountryController taxCountryController;
     private VatinController vatinController;
+    private TaxCodeController taxCodeController;
 
     /**
      * Constructs a new servlet for configuring data related to the simple tax
@@ -110,11 +139,15 @@ public class SimpleTaxServlet extends PluginServlet {
      *            The VATIN controller to use.
      * @param taxCountryController
      *            The tax country controller to use.
+     * @param taxCodeController
+     *            The tax code controller to use.
      */
-    public SimpleTaxServlet(VatinController vatinController, TaxCountryController taxCountryController) {
+    public SimpleTaxServlet(VatinController vatinController, TaxCountryController taxCountryController,
+            TaxCodeController taxCodeController) {
         super();
         this.taxCountryController = taxCountryController;
         this.vatinController = vatinController;
+        this.taxCodeController = taxCodeController;
     }
 
     /**
@@ -124,10 +157,19 @@ public class SimpleTaxServlet extends PluginServlet {
      * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
      * GET /taxCountries
      * GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
-     * 
+     *
      * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
      * GET /vatins
      * GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
+     *
+     * GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+     * </pre>
+     *
+     * Other endpoints could be provided in the future, when the Kill Bill API
+     * make them reasonable to provide:
+     *
+     * <pre>
+     * GET /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
      * </pre>
      */
     @Override
@@ -141,7 +183,7 @@ public class SimpleTaxServlet extends PluginServlet {
         String pathInfo = req.getPathInfo();
         Matcher matcher = ACCOUNT_PATTERN.matcher(pathInfo);
         if (matcher.matches()) {
-            UUID accountId = toUUIDOrNull(matcher.group(ACCOUNT_ID_GROUP));
+            UUID accountId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
             if (accountId == null) {
                 buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
                 return;
@@ -201,6 +243,91 @@ public class SimpleTaxServlet extends PluginServlet {
             writeJsonOkResponse(value, resp);
             return;
         }
+
+        matcher = INVOICE_PATTERN.matcher(pathInfo);
+        if (matcher.matches()) {
+            UUID invoiceId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
+            if (invoiceId == null) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            String resourceName = matcher.group(RESOURCE_NAME_GROUP);
+            if (!TAX_CODES_RESOURCE_NAME.equals(resourceName)) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            Object value = taxCodeController.listInvoiceTaxCodes(invoiceId, tenant);
+            writeJsonOkResponse(value, resp);
+            return;
+        }
+
+        matcher = INVOICE_ITEM_PATTERN.matcher(pathInfo);
+        if (matcher.matches()) {
+            UUID invoiceItemId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
+            if (invoiceItemId == null) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            String resourceName = matcher.group(RESOURCE_NAME_GROUP);
+            if (!TAX_CODES_RESOURCE_NAME.equals(resourceName)) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            Object value = taxCodeController.getTaxCodesOfInvoiceItem(invoiceItemId, tenant);
+            writeJsonOkResponse(value, resp);
+        }
+
+        buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+    }
+
+    /**
+     * This implementation serves this HTTP end point:
+     *
+     * <pre>
+     * POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+     * </pre>
+     */
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Tenant tenant = getTenant(req);
+        if (tenant == null) {
+            buildNotFoundResponse("No tenant specified by the 'X-Killbill-ApiKey'"
+                    + " and 'X-Killbill-ApiSecret' headers", resp);
+            return;
+        }
+        String pathInfo = req.getPathInfo();
+
+        Matcher matcher = INVOICE_PATTERN.matcher(pathInfo);
+        if (matcher.matches()) {
+            UUID invoiceId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
+            if (invoiceId == null) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            String resourceName = matcher.group(RESOURCE_NAME_GROUP);
+            if (!TAX_CODES_RESOURCE_NAME.equals(resourceName)) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            TaxCodesPOSTRsc taxCodesRsc;
+            try {
+                taxCodesRsc = JSON_MAPPER.readValue(getRequestData(req), TaxCodesPOSTRsc.class);
+            } catch (JsonProcessingException exc) {
+                taxCodesRsc = null;
+            }
+            if (taxCodesRsc == null) {
+                resp.sendError(SC_BAD_REQUEST, "Invalid Tax Codes resource in request body");
+                return;
+            }
+            boolean saved = taxCodeController.saveInvoiceTaxCodes(invoiceId, taxCodesRsc, tenant);
+            if (!saved) {
+                resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save Tax Codes resource");
+                return;
+            }
+            buildCreatedResponse(invoiceResourceUri(invoiceId, TAX_CODES_RESOURCE_NAME), resp);
+            return;
+        }
+
         buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
     }
 
@@ -211,6 +338,8 @@ public class SimpleTaxServlet extends PluginServlet {
      * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
      * 
      * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+     * 
+     * PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
      * </pre>
      */
     @Override
@@ -222,54 +351,88 @@ public class SimpleTaxServlet extends PluginServlet {
             return;
         }
         String pathInfo = req.getPathInfo();
+
         Matcher matcher = ACCOUNT_PATTERN.matcher(pathInfo);
-        if (!matcher.matches()) {
-            buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
-            return;
+        if (matcher.matches()) {
+            UUID accountId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
+            if (accountId == null) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            String resourceName = matcher.group(RESOURCE_NAME_GROUP);
+            if (TAX_COUNTRY_RESOURCE_NAME.equals(resourceName)) {
+                TaxCountryRsc taxCountry;
+                try {
+                    taxCountry = JSON_MAPPER.readValue(getRequestData(req), TaxCountryRsc.class);
+                } catch (JsonProcessingException exc) {
+                    taxCountry = null;
+                }
+                if (taxCountry == null) {
+                    resp.sendError(SC_BAD_REQUEST, "Invalid tax country resource in request body");
+                    return;
+                }
+                boolean saved = taxCountryController.saveAccountTaxCountry(accountId, taxCountry, tenant);
+                if (!saved) {
+                    resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save tax country resource");
+                    return;
+                }
+                buildCreatedResponse(accountResourceUri(accountId, TAX_COUNTRY_RESOURCE_NAME), resp);
+                return;
+            } else if (VATIN_RESOURCE_NAME.equals(resourceName)) {
+                VATINRsc vatin;
+                try {
+                    vatin = JSON_MAPPER.readValue(getRequestData(req), VATINRsc.class);
+                } catch (JsonProcessingException exc) {
+                    vatin = null;
+                }
+                if (vatin == null) {
+                    resp.sendError(SC_BAD_REQUEST, "Invalid VAT Identification Number resource in request body");
+                    return;
+                }
+                boolean saved = vatinController.saveAccountVatin(accountId, vatin, tenant);
+                if (!saved) {
+                    resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save VAT Identification Number resource");
+                    return;
+                }
+                buildCreatedResponse(accountResourceUri(accountId, VATIN_RESOURCE_NAME), resp);
+                return;
+            } else {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
         }
-        UUID accountId = toUUIDOrNull(matcher.group(ACCOUNT_ID_GROUP));
-        if (accountId == null) {
-            buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
-            return;
-        }
-        String resourceName = matcher.group(RESOURCE_NAME_GROUP);
-        if (TAX_COUNTRY_RESOURCE_NAME.equals(resourceName)) {
-            TaxCountryRsc taxCountry;
+
+        matcher = INVOICE_ITEM_PATTERN.matcher(pathInfo);
+        if (matcher.matches()) {
+            UUID invoiceItemId = toUUIDOrNull(matcher.group(RESOURCE_IDENTIFIER_GROUP));
+            if (invoiceItemId == null) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            String resourceName = matcher.group(RESOURCE_NAME_GROUP);
+            if (!TAX_CODES_RESOURCE_NAME.equals(resourceName)) {
+                buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
+                return;
+            }
+            TaxCodesPUTRsc taxCodesRsc;
             try {
-                taxCountry = JSON_MAPPER.readValue(getRequestData(req), TaxCountryRsc.class);
+                taxCodesRsc = JSON_MAPPER.readValue(getRequestData(req), TaxCodesPUTRsc.class);
             } catch (JsonProcessingException exc) {
-                taxCountry = null;
+                taxCodesRsc = null;
             }
-            if (taxCountry == null) {
-                resp.sendError(SC_BAD_REQUEST, "Invalid tax country resource in request body");
+            if (taxCodesRsc == null) {
+                resp.sendError(SC_BAD_REQUEST, "Invalid Tax Codes resource in request body");
                 return;
             }
-            boolean saved = taxCountryController.saveAccountTaxCountry(accountId, taxCountry, tenant);
+            boolean saved = taxCodeController.saveTaxCodesOfInvoiceItem(invoiceItemId, taxCodesRsc, tenant);
             if (!saved) {
-                resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save tax country");
+                resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save Tax Codes resource");
                 return;
             }
-            buildCreatedResponse(accountResourceUri(accountId, TAX_COUNTRY_RESOURCE_NAME), resp);
-            return;
-        } else if (VATIN_RESOURCE_NAME.equals(resourceName)) {
-            VATINRsc vatin;
-            try {
-                vatin = JSON_MAPPER.readValue(getRequestData(req), VATINRsc.class);
-            } catch (JsonProcessingException exc) {
-                vatin = null;
-            }
-            if (vatin == null) {
-                resp.sendError(SC_BAD_REQUEST, "Invalid VAT Identification Number resource in request body");
-                return;
-            }
-            boolean saved = vatinController.saveAccountVatin(accountId, vatin, tenant);
-            if (!saved) {
-                resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save VAT Identification Number");
-                return;
-            }
-            buildCreatedResponse(accountResourceUri(accountId, VATIN_RESOURCE_NAME), resp);
+            buildCreatedResponse(invoiceItemResourceUri(invoiceItemId, TAX_CODES_RESOURCE_NAME), resp);
             return;
         }
+
         buildNotFoundResponse("Resource " + pathInfo + " not found", resp);
     }
 
