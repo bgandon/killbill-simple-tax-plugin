@@ -96,6 +96,8 @@ codes in their invoices.
 Configuration
 -------------
 
+### Configuring the plugin
+
 The configuration properties can be specified globally (via System
 Properties), or on a per tenant basis. Here is a typical setup for French VAT
 rates on the `SpyCarAdvanced.xml` catalog, implementing the cutoff date of
@@ -164,7 +166,10 @@ org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_2012_19_6%
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
 
-The plugin also provides the following REST endpoints to tweak invoice item taxation in more details.
+### Configuring accounts
+
+The plugin also provides the following REST endpoints to tweak taxation at the
+account level.
 
 ```
 GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
@@ -178,6 +183,8 @@ GET /taxCountries
 GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
 ```
 
+#### Assigning VAT Identification Numbers to accounts
+
 The “vatin” endpoints allow assigning [VAT Identification Numbers](https://en.wikipedia.org/wiki/VAT_identification_number)
 to accounts. The JSON payload for vatins follows this structure:
 
@@ -188,6 +195,7 @@ to accounts. The JSON payload for vatins follows this structure:
 }
 ```
 
+#### Assigning tax countries to accounts
 
 The “taxCountry” endpoints allow assigning a [two-letter country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
 to an account. Tax codes that are restricted to specific countries will only
@@ -202,8 +210,14 @@ to all accounts.) The JSON payload for tax countries follows this structure:
 }
 ```
 
+### Forcing specific tax codes in invoices
 
-Upcomming REST endpoints:
+For existing invoices, the plugin provides REST endpoints that allow tweaking
+the tax codes that have been set (or not) to invoice items.
+
+After changing a tax code of an invoice item, you'll need to re-run the
+invoice generation process. New tax items or adjustment items will be created
+accordingly to properly match the newly declared taxes.
 
 ```
 GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
