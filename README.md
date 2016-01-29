@@ -102,7 +102,7 @@ The configuration properties can be specified globally (via System
 Properties), or on a per-tenant basis. Here is an example setup for French VAT
 rates on the `SpyCarAdvanced.xml` catalog, implementing the cutoff date of
 2014-01-01. You can find a much more detailed example configuration in
-[eu-vat-example-config.properties](./tree/master/src/main/resources/eu-vat-example-config.properties).
+[eu-vat-example-config.properties](./src/main/resources/eu-vat-example-config.properties).
 
 ```bash
 curl -v \
