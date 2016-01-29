@@ -49,9 +49,9 @@ services that started being sold in 2013.)
 
 To deal with that cutoff date (which is well known in France, but everybody
 around the world is not supposed to know, sorry for that), the example config
-sets up 2 tax codes : `VAT_FR_2012_19_6%` and then `VAT_FR_2014_20_0%` (Please
-note that the percent sign is just a valid character for a tax code label;
-it’s just plain text with no special meaning.)
+sets up 2 tax codes : `VAT_FR_std_2000_19_6%` and then `VAT_FR_std_2014_20_0%`
+(Please note that the percent sign is just a valid character for a tax code
+label; it’s just plain text with no special meaning.)
 
 If you dig into the details of the first one, you’ll see these properties:
 
@@ -64,7 +64,7 @@ If you dig into the details of the first one, you’ll see these properties:
 So the “startingOn” and the “stoppingOn” properly model the cutoff dates to
 apply with that tax rate of 19.6%.
 
-If you read the properties of `VAT_FR_2014_20_0%`, you’ll notice that the
+If you read the properties of `VAT_FR_std_2014_20_0%`, you’ll notice that the
 “stoppingOn” cutoff date is not set. That’s because it’s the current rate to
 apply, and nobody knows yet until when. When the rate will change, the
 “stoppingOn” property will have to be set and a new tax code will have to be
@@ -99,7 +99,7 @@ Configuration
 ### Configuring the plugin
 
 The configuration properties can be specified globally (via System
-Properties), or on a per tenant basis. Here is a typical setup for French VAT
+Properties), or on a per-tenant basis. Here is an example setup for French VAT
 rates on the `SpyCarAdvanced.xml` catalog, implementing the cutoff date of
 2014-01-01.
 
@@ -115,78 +115,50 @@ curl -v \
 'org.killbill.billing.plugin.simpletax.taxResolver = org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver
 org.killbill.billing.plugin.simpletax.taxItem.amount.precision = 2
 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_2_1%.taxItem.description = VAT 2.1%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_2_1%.rate = 0.021
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_2_1%.startingOn = 2012-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_2_1%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_2_1%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_5_5%.taxItem.description = VAT 5.5%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_5_5%.rate = 0.055
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_5_5%.startingOn = 2012-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_5_5%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_5_5%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.taxItem.description = VAT 7.0%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.rate = 0.070
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.startingOn = 2012-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_10_0%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.taxItem.description = VAT 19.6%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.rate = 0.196
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.startingOn = 2012-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2012_19_6%.country = FR
+# French tax codes (limited set)
 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.taxItem.description = VAT 2.1%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.rate = 0.021
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.startingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.stoppingOn = 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_2_1%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_5_5%.taxItem.description = VAT 5.5%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_5_5%.rate = 0.055
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_5_5%.startingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_5_5%.stoppingOn = 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_5_5%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_10_0%.taxItem.description = VAT 10.0%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_10_0%.rate = 0.100
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_10_0%.startingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_10_0%.stoppingOn = 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_10_0%.country = FR
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.taxItem.description = VAT 20.0%
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.rate = 0.200
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.startingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.stoppingOn = 
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_2014_20_0%.country = FR
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.taxItem.description = VAT 19.6%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.rate = 0.196
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.startingOn = 2000-04-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.stoppingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.country = FR
 
-org.killbill.billing.plugin.simpletax.products.Standard =      VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Sport =         VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Super =         VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.OilSlick =      VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_2012_19_6%, VAT_FR_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_2012_19_6%, VAT_FR_2014_20_0%' \
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.taxItem.description = VAT 20%
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.rate = 0.200
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.startingOn = 2014-01-01
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.stoppingOn =
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.country = FR
+
+# Catalog Products
+
+org.killbill.billing.plugin.simpletax.products.Standard =      VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Sport =         VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Super =         VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.OilSlick =      VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
+
 
 ### Configuring accounts
 
 The plugin also provides the following REST endpoints to tweak taxation at the
 account level.
 
+#### Assigning VAT Identification Numbers to accounts
+
+The “vatin” endpoints allow assigning [VAT Identification Numbers](https://en.wikipedia.org/wiki/VAT_identification_number)
+to accounts.
+
 ```
 GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
 PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
 GET /vatins
 GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
-
-GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-GET /taxCountries
-GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
 ```
 
-#### Assigning VAT Identification Numbers to accounts
-
-The “vatin” endpoints allow assigning [VAT Identification Numbers](https://en.wikipedia.org/wiki/VAT_identification_number)
-to accounts. The JSON payload for vatins follows this structure:
+The JSON payload for vatins follows this structure:
 
 ```json
 {
@@ -201,7 +173,16 @@ The “taxCountry” endpoints allow assigning a [two-letter country code](https
 to an account. Tax codes that are restricted to specific countries will only
 apply to accounts that have the same country codes for their tax countries.
 (And tax codes not restricted to any country are considered global; they apply
-to all accounts.) The JSON payload for tax countries follows this structure:
+to all accounts.)
+
+```
+GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+GET /taxCountries
+GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+```
+
+The JSON payload for tax countries follows this structure:
 
 ```json
 {
@@ -210,10 +191,10 @@ to all accounts.) The JSON payload for tax countries follows this structure:
 }
 ```
 
-### Forcing specific tax codes in invoices
+### Forcing specific tax codes on existing invoice items
 
 For existing invoices, the plugin provides REST endpoints that allow tweaking
-the tax codes that have been set (or not) to invoice items.
+the tax codes that have been set (or not) to their items.
 
 After changing a tax code of an invoice item, you'll need to re-run the
 invoice generation process. New tax items or adjustment items will be created
@@ -249,7 +230,7 @@ Payload structure for tax codes:
 Upcoming improvements
 ---------------------
 
-1. Implement critical user story for European VAT:
+1. Implement critical user stories for European VAT:
    - B2B that have a valid VAT number aren’t charged VAT
    - B2B that don’t have a VAT number are charged VAT at their local rate
 2. Build a more comprehensive example configuration that embraces more
