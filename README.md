@@ -152,14 +152,14 @@ account level.
 The “vatin” endpoints allow assigning [VAT Identification Numbers](https://en.wikipedia.org/wiki/VAT_identification_number)
 to accounts.
 
-```
-GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
-PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
-GET /vatins
-GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
-```
+Method | URI                                             | OK  | Error Statuses
+-------|-------------------------------------------------|-----|-------------------------------------------
+GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 200 | 404: account ID does not exist for tenant
+PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 201 | 400: when VATIN is malformed _for sure_ (when VATIN cannot be validated, it is stored as-is) <br/> 500: when something went wrong while saving value
+GET    | /vatins                                         | 200 | -
+GET    | /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
-The JSON payload for vatins follows this structure:
+The base JSON payload for VATINs follows this structure:
 
 ```json
 {
@@ -167,6 +167,7 @@ The JSON payload for vatins follows this structure:
   "vatin": "<VATIN>"
 }
 ```
+
 
 #### Assigning tax countries to accounts
 
@@ -176,14 +177,14 @@ apply to accounts that have the same country codes for their tax countries.
 (And tax codes not restricted to any country are considered global; they apply
 to all accounts.)
 
-```
-GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-GET /taxCountries
-GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
-```
+Method | URI                                                   | OK  | Error Statuses
+-------|-------------------------------------------------------|-----|------------------------------------------
+GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
+PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
+GET    | /taxCountries                                         | 200 | -
+GET    | /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
-The JSON payload for tax countries follows this structure:
+The base JSON payload for tax countries follows this structure:
 
 ```json
 {
