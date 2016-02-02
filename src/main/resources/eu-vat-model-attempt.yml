@@ -1,0 +1,1475 @@
+---
+
+# This tax modeling is inspired by the CommerceGuys/tax project.
+# See: <https://github.com/commerceguys/tax/tree/master/resources/tax_type>
+
+# The source tax rates are specified in pages 24 and later of the following
+# document from the European Commission:
+# <http://ec.europa.eu/taxation_customs/resources/documents/taxation/vat/how_vat_works/rates/vat_rates_en.pdf>
+
+# Here many reworks have been made for a more consistent model
+#
+# Basically:
+# - A tax defines a set of tax bundles, which associate a tax zone to some tax
+#   codes.
+# - A tax code defines a set of tax rates, along with their cutoff dates. Each
+#   tax code models a taxation level, e.g. "Standard", "Intermediate",
+#   "Reduced", "Super Reduced", or "Zero"
+#
+# Major changes:
+# - Add base hierarchy "taxes"
+# - Rename "zone" -> "tax_zone"
+# - Rename "tax_type" -> "tax_bundles"
+# - Rename "rates" -> "tax_codes"
+# - Rename "amounts" -> "rates"
+# - Rename "start_date" -> "starting_on"
+# - Convert "end_date" into "stopping_on" dates, which are the first day when
+#   the tax rate stops being applicable, i.e. exactly the day after
+#   "end_date". This helps a lot in verifying the consistency of cutoff dates.
+# - Remove "scope" attributes from tax zones
+# - Remove "type" attributes from zone members
+# - Remove "tag" attribute from tax bundles (formerly "tax types")
+#
+# Minor changes:
+# - Rename zone identifiers
+# - Move "display_inclusive" and "generic_label" attributes from "tax_types"
+#   to "taxes"
+# - Normalize tax rates with 3 fractional digits
+# - Convert tax rates to strings to favor use of exact mathematical types
+#   (like "BigDecimal" in Java)
+# - Use collections for "included_postal_codes" and "excludedpostal_codes"
+#   attributes instead of CSV
+# - Improve names of tax zones members
+
+# Limitations
+# -----------
+# The modeling is still too rigid anyway.
+#
+# Indeed, the basic idea is that you would tag your products with one
+# applicable tax code, for each tax zone that your store can serve.
+#
+# This is already quite a deal of work. Imagine that for each product you
+# sell, you have to specifically check with all tax zone authorities to which
+# tax level the product belongs, so that you can properly tag your products
+# and apply the right tax rate.
+#
+# But from time to time, taxation authorities move one product from a tax
+# level to another. This requires to introduce cutoff dates which are not
+# related to any rate change, but rather a change of the set of applicable
+# goods or services. In such situation, tax codes have to be broken down
+# accordingly, so that you can still properly tag your products.
+#
+# There is no definitive solution to this because there are too many
+# categories of goods and services. So, you need to create your own set,
+# tailored to your needs. Plus, there is no limit in the number of possible
+# categories that taxation authorities can come up with. So, you need to
+# maintain your own set by yourself.
+
+
+tax_zones:
+- &vat_zone_at
+  name: Austria (VAT)
+  members:
+  - name: Austria (excl. Jungholz and Mittelberg)
+    country_code: AT
+    excluded_postal_codes: [ "6691", "6991:6993" ]
+- &gst_zone_au
+  name: Australia (GST)
+  members:
+    name: Australia
+    country_code: AU
+- &vat_zone_be
+  name: Belgium (VAT)
+  members:
+  - name: Belgium
+    country_code: BE
+- &vat_zone_bg
+  name: Bulgaria (VAT)
+  members:
+  - name: Bulgaria
+    country_code: BG
+- &vat_zone_ch
+  name: Switzerland (VAT)
+  members:
+  - name: Switzerland
+    country_code: CH
+  - name: Germany (Büsingen)
+    country_code: DE
+    included_postal_codes: [ "78266" ]
+  - name: Italy (Lake Lugano)
+    country_code: IT
+    included_postal_codes: [ "22060" ]
+- &vat_zone_cy
+  name: Cyprus (VAT)
+  members:
+  - name: Cyprus
+    country_code: CY
+- &vat_zone_cz
+  name: Czech Republic (VAT)
+  members:
+  - name: Czech Republic
+    country_code: CZ
+- &vat_zone_de
+  name: Germany (VAT)
+  members:
+  - name: Germany (excl. Heligoland and Büsingen)
+    country_code: DE
+    excluded_postal_codes: [ "27498", "78266" ]
+  - name: Austria (Jungholz and Mittelberg)
+    country_code: AT
+    included_postal_codes: [ "6691", "6991:6993" ]
+- &vat_zone_dk
+  name: Denmark (VAT)
+  members:
+  - name: Denmark
+    country_code: DK
+- &vat_zone_ee
+  name: Estonia (VAT)
+  members:
+  - name: Estonia
+    country_code: EE
+- &vat_zone_es
+  name: Spain (VAT)
+  members:
+  - name: "Spain (excl. Canary Islands, Ceuta and Melilla)"
+    country_code: ES
+    excluded_postal_codes: [ "/(?:35|38|51|52)[0-9]{3}/" ]
+- &vat_zone_eu
+  name: European Union (Intra-Community VAT)
+  members:
+  - *vat_zone_at
+  - *vat_zone_be
+  - *vat_zone_bg
+  - *vat_zone_cy
+  - *vat_zone_cz
+  - *vat_zone_de
+  - *vat_zone_dk
+  - *vat_zone_ee
+  - *vat_zone_es
+  - *vat_zone_fi
+  - *vat_zone_fr
+  - *vat_zone_fr_h
+  - *vat_zone_gb
+  - *vat_zone_gr
+  - *vat_zone_gr_x
+  - *vat_zone_hr
+  - *vat_zone_hu
+  - *vat_zone_ie
+  - *vat_zone_it
+  - *vat_zone_lt
+  - *vat_zone_lu
+  - *vat_zone_lv
+  - *vat_zone_mt
+  - *vat_zone_nl
+  - *vat_zone_pl
+  - *vat_zone_pt
+  - *vat_zone_pt_20
+  - *vat_zone_pt_30
+  - *vat_zone_ro
+  - *vat_zone_se
+  - *vat_zone_si
+  - *vat_zone_sk
+- &vat_zone_fi
+  name: Finland (VAT)
+  members:
+  - name: "Finland (excl. Åland Islands)"
+    country_code: FI
+    excluded_postal_codes: [ "22000:22999" ]
+- &vat_zone_fr_h
+  name: France - Corsica (VAT)
+  members:
+  - name: France (Corsica)
+    country_code: FR
+    included_postal_codes: [ "/20[0-9]{3}/" ]
+- &vat_zone_fr
+  name: France (VAT)
+  members:
+  - name: France (excl. Corsica)
+    country_code: FR
+    excluded_postal_codes: [ "/20[0-9]{3}/" ]
+  - name: Monaco
+    country_code: MC
+- &vat_zone_fr_x
+  name: France DOM (VAT)
+  members:
+  - name: Guadeloupe
+    country_code: GP
+  - name: Martinique
+    country_code: MQ
+  - name: Réunion
+    country_code: RE
+  - name: Mayotte
+    country_code: YT
+- &vat_zone_gb
+  name: United Kingdom (VAT)
+  members:
+  - name: United Kingdom
+    country_code: GB
+  - name: Isle of Man
+    country_code: IM
+- &vat_zone_gr
+  name: Greece (VAT)
+  members:
+  - name: "Greece (excl. Thassos, Samothrace, Skiros, Northern Sporades, Lesbos, Chios, The Cyclades, The Dodecanese)"
+    country_code: GR
+    excluded_postal_codes: [ "/640 ?04|680 ?02|340 ?07|((370|811|821|840|851) ?[0-9]{2})/" ]
+- &vat_zone_gr_x
+  name: Greece Islands (VAT)
+  members:
+  - name: "Thassos, Samothrace, Skiros, Northern Sporades, Lesbos, Chios, The Cyclades, The Dodecanese"
+    country_code: GR
+    included_postal_codes: [ "/640 ?04|680 ?02|340 ?07|((370|811|821|840|851) ?[0-9]{2})/" ]
+- &vat_zone_hr
+  name: Croatia (VAT)
+  members:
+  - name: Croatia
+    country_code: HR
+- &vat_zone_hu
+  name: Hungary (VAT)
+  members:
+  - name: Hungary
+    country_code: HU
+- &vat_zone_ie
+  name: Ireland (VAT)
+  members:
+  - name: Ireland
+    country_code: IE
+- &vat_zone_is
+  name: Iceland (VAT)
+  members:
+  - name: Iceland
+    country_code: IS
+- &vat_zone_it
+  name: Italy (VAT)
+  members:
+  - name: "Italy (excl.  Livigno, Campione d\u2019Italia and Lake Lugano)"
+    country_code: IT
+    excluded_postal_codes: [ "23030", "22060" ]
+- &vat_zone_lt
+  name: Lithuania (VAT)
+  members:
+  - name: Lithuania
+    country_code: LT
+- &vat_zone_lu
+  name: Luxembourg (VAT)
+  members:
+  - name: Luxembourg
+    country_code: LU
+- &vat_zone_lv
+  name: Latvia (VAT)
+  members:
+  - name: Latvia
+    country_code: LV
+- &vat_zone_mt
+  name: Malta (VAT)
+  members:
+  - name: Malta
+    country_code: MT
+- &vat_zone_nl
+  name: Netherlands (VAT)
+  members:
+  - name: Netherlands
+    country_code: NL
+- &vat_zone_no
+  name: Norway (VAT)
+  members:
+  - name: Norway
+    country_code: "NO"
+- &vat_zone_pl
+  name: Poland (VAT)
+  members:
+  - name: Poland
+    country_code: PL
+- &vat_zone_pt_20
+  name: Portugal - Azores (VAT)
+  members:
+  - name: Portugal (Azores)
+    country_code: PT
+    included_postal_codes: [ "/9[0-4][0-9]{2}-[0-9]{3}/" ]
+- &vat_zone_pt_30
+  name: Portugal - Madeira (VAT)
+  members:
+  - name: Portugal (Madeira)
+    country_code: PT
+    included_postal_codes: [ "/9[5-9][0-9]{2}-[0-9]{3}/" ]
+- &vat_zone_pt
+  name: Portugal (VAT)
+  members:
+  - name: Portugal (excl. Azores and Madeira)
+    country_code: PT
+    excluded_postal_codes: [ "/9[0-9]{3}-[0-9]{3}/" ]
+- &vat_zone_ro
+  name: Romania (VAT)
+  members:
+  - name: Romania
+    country_code: RO
+- &vat_zone_se
+  name: Sweden (VAT)
+  members:
+  - name: Sweden
+    country_code: SE
+- &vat_zone_si
+  name: Slovenia (VAT)
+  members:
+  - name: Slovenia
+    country_code: SI
+- &vat_zone_sk
+  name: Slovakia (VAT)
+  members:
+  - name: Slovakia
+    country_code: SK
+- &vat_zone_za
+  name: South Africa (VAT)
+  members:
+  - name: South Africa
+    country_code: ZA
+
+
+tax_bundles:
+- &at_vat
+  name: Austrian VAT
+  zone: *vat_zone_at
+  tax_codes:
+  - id: at_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: at_vat_standard_1995
+      rate: "0.200"
+      starting_on: "1995-01-01"
+  - id: at_vat_reduced
+    name: Reduced
+    rates:
+    - id: at_vat_reduced_1995
+      rate: "0.100"
+      starting_on: "1995-01-01"
+      stopping_on: "2016-01-01"
+    - id: at_vat_reduced_2016
+      rate: "0.130"
+      starting_on: "2016-01-01"
+
+- &au_gst
+  name: Australian GST
+  zone: *gst_zone_au
+  tax_codes:
+  - id: au_gst_standard
+    name: Standard
+    default: true
+    rates:
+    - id: au_gst_standard_2000
+      rate: "0.100"
+      starting_on: "2000-07-01"
+
+- &be_vat
+  name: Belgian VAT
+  zone: *vat_zone_be
+  tax_codes:
+  - id: be_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: be_vat_standard_1996
+      rate: "0.210"
+      starting_on: "1996-01-01"
+  - id: be_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: be_vat_intermediate_1992
+      rate: "0.120"
+      starting_on: "1992-04-01"
+  - id: be_vat_reduced
+    name: Reduced
+    rates:
+    - id: be_vat_reduced_1971
+      rate: "0.060"
+      starting_on: "1971-01-01"
+  - id: be_vat_zero
+    name: Zero
+    rates:
+    - id: be_vat_zero_1971
+      rate: "0.000"
+      starting_on: "1971-01-01"
+
+- &bg_vat
+  name: Bulgarian VAT
+  zone: *vat_zone_bg
+  tax_codes:
+  - id: bg_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: bg_vat_standard_2007
+      rate: "0.200"
+      starting_on: "2007-01-01"
+  - id: bg_vat_reduced
+    name: Reduced
+    rates:
+    - id: bg_vat_reduced_2007
+      rate: "0.070"
+      starting_on: "2007-01-01"
+      stopping_on: "2011-04-01"
+    - id: bg_vat_reduced_2011
+      rate: "0.090"
+      starting_on: "2011-04-01"
+
+- &ch_vat
+  name: Swiss VAT
+  zone: *vat_zone_ch
+  tax_codes:
+  - id: ch_vat_standard
+    name: Standard
+    rates:
+    - id: ch_vat_standard_2011
+      rate: "0.080"
+      starting_on: "2011-01-01"
+    default: true
+  - id: ch_vat_hotel
+    name: Hotel
+    rates:
+    - id: ch_vat_hotel_2011
+      rate: "0.038"
+      starting_on: "2011-01-01"
+  - id: ch_vat_reduced
+    name: Reduced
+    rates:
+    - id: ch_vat_reduced_2011
+      rate: "0.025"
+      starting_on: "2011-01-01"
+
+- &cy_vat
+  name: Cyprus VAT
+  zone: *vat_zone_cy
+  tax_codes:
+  - id: cy_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: cy_vat_standard_2004
+      rate: "0.150"
+      starting_on: "2004-05-01"
+      stopping_on: "2012-03-01"
+    - id: cy_vat_standard_2012
+      rate: "0.170"
+      starting_on: "2012-03-01"
+      stopping_on: "2013-01-14"
+    - id: cy_vat_standard_2013
+      rate: "0.180"
+      starting_on: "2013-01-14"
+      stopping_on: "2014-01-13"
+    - id: cy_vat_standard_2014
+      rate: "0.190"
+      starting_on: "2014-01-13"
+  - id: cy_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: cy_vat_intermediate_2005
+      rate: "0.080"
+      starting_on: "2005-08-01"
+      stopping_on: "2014-01-13"
+    - id: cy_vat_intermediate_2014
+      rate: "0.090"
+      starting_on: "2014-01-13"
+  - id: cy_vat_reduced
+    name: Reduced
+    rates:
+    - id: cy_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+
+- &cz_vat
+  name: Czech VAT
+  zone: *vat_zone_cz
+  tax_codes:
+  - id: cz_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: cz_vat_standard_2004
+      rate: "0.190"
+      starting_on: "2004-05-01"
+      stopping_on: "2010-01-01"
+    - id: cz_vat_standard_2010
+      rate: "0.200"
+      starting_on: "2010-01-01"
+      stopping_on: "2013-01-01"
+    - id: cz_vat_standard_2013
+      rate: "0.210"
+      starting_on: "2013-01-01"
+  - id: cz_vat_reduced
+    name: Reduced
+    rates:
+    - id: cz_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+      stopping_on: "2008-01-01"
+    - id: cz_vat_reduced_2008
+      rate: "0.090"
+      starting_on: "2008-01-01"
+      stopping_on: "2010-01-01"
+    - id: cz_vat_reduced_2010
+      rate: "0.100"
+      starting_on: "2010-01-01"
+      stopping_on: "2012-01-01"
+    - id: cz_vat_reduced_2012
+      rate: "0.140"
+      starting_on: "2012-01-01"
+      stopping_on: "2013-01-01"
+    - id: cz_vat_reduced_2013
+      rate: "0.150"
+      starting_on: "2013-01-01"
+  - id: cz_vat_zero
+    name: Zero
+    rates:
+    - id: cz_vat_zero_2004
+      rate: "0.000"
+      starting_on: "2004-05-01"
+
+- &de_vat
+  name: German VAT
+  zone: *vat_zone_de
+  tax_codes:
+  - id: de_vat_standard
+    name: Standard
+    rates:
+    - id: de_vat_standard_2007
+      rate: "0.190"
+      starting_on: "2007-01-01"
+    default: true
+  - id: de_vat_reduced
+    name: Reduced
+    rates:
+    - id: de_vat_reduced_1983
+      rate: "0.070"
+      starting_on: "1983-07-01"
+
+- &dk_vat
+  name: Danish VAT
+  zone: *vat_zone_dk
+  tax_codes:
+  - id: dk_vat_standard
+    name: Standard
+    rates:
+    - id: dk_vat_standard_1992
+      rate: "0.250"
+      starting_on: "1992-01-01"
+    default: true
+  - id: dk_vat_zero
+    name: Zero
+    rates:
+    - id: dk_vat_zero_1973
+      rate: "0.000"
+      starting_on: "1973-01-01"
+
+- &ee_vat
+  name: Estonian VAT
+  zone: *vat_zone_ee
+  tax_codes:
+  - id: ee_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: ee_vat_standard_2004
+      rate: "0.180"
+      starting_on: "2004-05-01"
+      stopping_on: "2009-07-01"
+    - id: ee_vat_standard_2009
+      rate: "0.200"
+      starting_on: "2009-07-01"
+  - id: ee_vat_reduced
+    name: Reduced
+    rates:
+    - id: ee_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+      stopping_on: "2009-01-01"
+    - id: ee_vat_reduced_2009
+      rate: "0.090"
+      starting_on: "2009-01-01"
+
+- &es_vat
+  name: Spanish VAT
+  zone: *vat_zone_es
+  tax_codes:
+  - id: es_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: es_vat_standard_1995
+      rate: "0.160"
+      starting_on: "1995-01-01"
+      stopping_on: "2010-07-01"
+    - id: es_vat_standard_2010
+      rate: "0.180"
+      starting_on: "2010-07-01"
+      stopping_on: "2012-09-01"
+    - id: es_vat_standard_2012
+      rate: "0.210"
+      starting_on: "2012-09-01"
+  - id: es_vat_reduced
+    name: Reduced
+    rates:
+    - id: es_vat_reduced_1995
+      rate: "0.070"
+      starting_on: "1995-01-01"
+      stopping_on: "2010-07-01"
+    - id: es_vat_reduced_2010
+      rate: "0.080"
+      starting_on: "2010-07-01"
+      stopping_on: "2012-09-01"
+    - id: es_vat_reduced_2012
+      rate: "0.100"
+      starting_on: "2012-09-01"
+  - id: es_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: es_vat_super_reduced_1995
+      rate: "0.040"
+      starting_on: "1995-01-01"
+
+- &eu_vat
+  name: Intra-Community Supply
+  zone: *vat_zone_eu
+  tax_codes:
+  - id: eu_ic_vat
+    name: Intra-Community Supply
+    default: true
+    rates:
+    - id: eu_ic_vat
+      rate: "0.000"
+
+- &fi_vat
+  name: Finish VAT
+  zone: *vat_zone_fi
+  tax_codes:
+  - id: fi_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: fi_vat_standard_1995
+      rate: "0.220"
+      starting_on: "1995-01-01"
+      stopping_on: "2010-07-01"
+    - id: fi_vat_standard_2010
+      rate: "0.230"
+      starting_on: "2010-07-01"
+      stopping_on: "2013-01-01"
+    - id: fi_vat_standard_2013
+      rate: "0.240"
+      starting_on: "2013-01-01"
+  - id: fi_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: fi_vat_intermediate_2010
+      rate: "0.130"
+      starting_on: "2010-07-01"
+      stopping_on: "2013-01-01"
+    - id: fi_vat_intermediate_2013
+      rate: "0.140"
+      starting_on: "2013-01-01"
+  - id: fi_vat_reduced
+    name: Reduced
+    rates:
+    - id: fi_vat_reduced_2010
+      rate: "0.900"
+      starting_on: "2010-07-01"
+      stopping_on: "2013-01-01"
+    - id: fi_vat_reduced_2013
+      rate: "0.100"
+      starting_on: "2013-01-01"
+
+- &fr_h_vat
+  name: Corsican VAT
+  zone: *vat_zone_fr_h
+  tax_codes:
+  - id: fr_h_vat_standard
+    name: Standard
+    rates:
+    - id: fr_h_vat_standard_2004
+      rate: "0.196"
+      starting_on: "2004-04-01"
+      stopping_on: "2014-01-01"
+    - id: fr_h_vat_standard_2014
+      rate: "0.200"
+      starting_on: "2014-01-01"
+    default: true
+  - id: fr_h_vat_special
+    name: Special
+    rates:
+    - id: fr_h_vat_special_2004
+      rate: "0.080"
+      starting_on: "2004-04-01"
+      stopping_on: "2014-01-01"
+    - id: fr_h_vat_special_2014
+      rate: "0.100"
+      starting_on: "2014-01-01"
+  - id: fr_h_vat_reduced
+    name: Reduced
+    rates:
+    - id: fr_h_vat_reduced_1997
+      rate: "0.021"
+      starting_on: "1997-09-01"
+  - id: fr_h_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: fr_h_vat_super_reduced_1972
+      rate: "0.009"
+      starting_on: "1972-04-01"
+
+- &fr_vat
+  name: French VAT
+  zone: *vat_zone_fr
+  tax_codes:
+  - id: fr_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: fr_vat_standard_2004
+      rate: "0.196"
+      starting_on: "2004-04-01"
+      stopping_on: "2014-01-01"
+    - id: fr_vat_standard_2014
+      rate: "0.200"
+      starting_on: "2014-01-01"
+  - id: fr_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: fr_vat_intermediate_2012
+      rate: "0.070"
+      starting_on: "2012-01-01"
+      stopping_on: "2014-01-01"
+    - id: fr_vat_intermediate_2014
+      rate: "0.100"
+      starting_on: "2014-01-01"
+  - id: fr_vat_reduced
+    name: Reduced
+    rates:
+    - id: fr_vat_reduced_1982
+      rate: "0.055"
+      starting_on: "1982-07-01"
+  - id: fr_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: fr_vat_super_reduced_1986
+      rate: "0.021"
+      starting_on: "1986-07-01"
+
+- &gb_vat
+  name: British VAT
+  zone: *vat_zone_gb
+  tax_codes:
+  - id: gb_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: gb_vat_standard_1991
+      rate: "0.175"
+      starting_on: "1991-03-19"
+      stopping_on: "2008-12-01"
+    - id: gb_vat_standard_2008
+      rate: "0.150"
+      starting_on: "2008-12-01"
+      stopping_on: "2010-01-01"
+    - id: gb_vat_standard_2010
+      rate: "0.175"
+      starting_on: "2010-01-01"
+      stopping_on: "2011-01-04"
+    - id: gb_vat_standard_2011
+      rate: "0.200"
+      starting_on: "2011-01-04"
+  - id: gb_vat_reduced
+    name: Reduced
+    rates:
+    - id: gb_vat_reduced_1997
+      rate: "0.050"
+      starting_on: "1997-09-01"
+  - id: gb_vat_zero
+    name: Zero
+    rates:
+    - id: gb_vat_zero_1973
+      rate: "0.000"
+      starting_on: "1973-01-01"
+
+- &gr_vat
+  name: Greek VAT
+  zone: *vat_zone_gr
+  tax_codes:
+  - id: gr_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: gr_vat_standard_2005
+      rate: "0.190"
+      starting_on: "2005-04-01"
+      stopping_on: "2010-03-15"
+    - id: gr_vat_standard_2010_03
+      rate: "0.210"
+      starting_on: "2010-03-15"
+      stopping_on: "2010-07-01"
+    - id: gr_vat_standard_2010_07
+      rate: "0.230"
+      starting_on: "2010-07-01"
+  - id: gr_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: gr_vat_intermediate_2005
+      rate: "0.090"
+      starting_on: "2005-04-01"
+      stopping_on: "2010-03-15"
+    - id: gr_vat_intermediate_2010_03
+      rate: "0.100"
+      starting_on: "2010-03-15"
+      stopping_on: "2010-07-01"
+    - id: gr_vat_intermediate_2010_07
+      rate: "0.110"
+      starting_on: "2010-07-01"
+      stopping_on: "2011-01-01"
+    - id: gr_vat_intermediate_2011
+      rate: "0.130"
+      starting_on: "2011-01-01"
+  - id: gr_vat_reduced
+    name: Reduced
+    rates:
+    - id: gr_vat_reduced_2005
+      rate: "0.045"
+      starting_on: "2005-04-01"
+      stopping_on: "2010-03-15"
+    - id: gr_vat_reduced_2010_03
+      rate: "0.050"
+      starting_on: "2010-03-15"
+      stopping_on: "2010-07-01"
+    - id: gr_vat_reduced_2010_07
+      rate: "0.055"
+      starting_on: "2010-07-01"
+      stopping_on: "2011-01-01"
+    - id: gr_vat_reduced_2011
+      rate: "0.065"
+      starting_on: "2011-01-01"
+      stopping_on: "2015-07-01"
+    - id: gr_vat_reduced_2015
+      rate: "0.060"
+      starting_on: "2015-07-01"
+
+- &hr_vat
+  name: Croatian VAT
+  zone: *vat_zone_hr
+  tax_codes:
+  - id: hr_vat_standard
+    name: Standard
+    rates:
+    - id: hr_vat_standard_2013
+      rate: "0.250"
+      starting_on: "2013-07-01"
+    default: true
+  - id: hr_vat_reduced
+    name: Reduced
+    rates:
+    - id: hr_vat_reduced_2013
+      rate: "0.100"
+      starting_on: "2013-07-01"
+      stopping_on: "2014-01-01"
+    - id: hr_vat_reduced_2014
+      rate: "0.130"
+      starting_on: "2014-01-01"
+  - id: hr_vat_zero
+    name: Zero
+    rates:
+    - id: hr_vat_zero_2013
+      rate: "0.000"
+      starting_on: "2013-07-01"
+
+- &hu_vat
+  name: Hungarian VAT
+  zone: *vat_zone_hu
+  tax_codes:
+  - id: hu_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: hu_vat_standard_2004
+      rate: "0.250"
+      starting_on: "2004-05-01"
+      stopping_on: "2006-01-01"
+    - id: hu_vat_standard_2006
+      rate: "0.200"
+      starting_on: "2006-01-01"
+      stopping_on: "2009-07-01"
+    - id: hu_vat_standard_2009
+      rate: "0.250"
+      starting_on: "2009-07-01"
+      stopping_on: "2012-01-01"
+    - id: hu_vat_standard_2012
+      rate: "0.270"
+      starting_on: "2012-01-01"
+  - id: hu_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: hu_vat_intermediate_2009
+      rate: "0.180"
+      starting_on: "2009-07-01"
+  - id: hu_vat_reduced
+    name: Reduced
+    rates:
+    - id: hu_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+
+- &ie_vat
+  name: Irish VAT
+  zone: *vat_zone_ie
+  tax_codes:
+  - id: ie_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: ie_vat_standard_2002
+      rate: "0.210"
+      starting_on: "2002-03-01"
+      stopping_on: "2008-12-01"
+    - id: ie_vat_standard_2008
+      rate: "0.215"
+      starting_on: "2008-12-01"
+      stopping_on: "2010-01-01"
+    - id: ie_vat_standard_2010
+      rate: "0.210"
+      starting_on: "2010-01-01"
+      stopping_on: "2012-01-01"
+    - id: ie_vat_standard_2012
+      rate: "0.230"
+      starting_on: "2012-01-01"
+  - id: ie_vat_reduced
+    name: Reduced
+    rates:
+    - id: ie_vat_reduced_2003
+      rate: "0.135"
+      starting_on: "2003-01-01"
+  - id: ie_vat_second_reduced
+    name: Second Reduced
+    rates:
+    - id: ie_vat_second_reduced_2011
+      rate: "0.090"
+      starting_on: "2011-07-01"
+  - id: ie_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: ie_vat_super_reduced_2001
+      rate: "0.043"
+      starting_on: "2001-01-01"
+      stopping_on: "2004-01-01"
+    - id: ie_vat_super_reduced_2004
+      rate: "0.044"
+      starting_on: "2004-01-01"
+      stopping_on: "2005-01-01"
+    - id: ie_vat_super_reduced_2005
+      rate: "0.048"
+      starting_on: "2005-01-01"
+  - id: ie_vat_zero
+    name: Zero
+    rates:
+    - id: ie_vat_zero_1972
+      rate: "0.000"
+      starting_on: "1972-04-01"
+
+- &it_vat
+  name: Italian VAT
+  zone: *vat_zone_it
+  tax_codes:
+  - id: it_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: it_vat_standard_2011
+      rate: "0.210"
+      starting_on: "2011-09-17"
+      stopping_on: "2013-10-01"
+    - id: it_vat_standard_2013
+      rate: "0.220"
+      starting_on: "2013-10-01"
+  - id: it_vat_reduced
+    name: Reduced
+    rates:
+    - id: it_vat_reduced_1995
+      rate: "0.100"
+      starting_on: "1995-02-24"
+  - id: it_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: it_vat_super_reduced_1989
+      rate: "0.040"
+      starting_on: "1989-01-01"
+
+- &lt_vat
+  name: Lithuanian VAT
+  zone: *vat_zone_lt
+  tax_codes:
+  - id: lt_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: lt_vat_standard_2004
+      rate: "0.180"
+      starting_on: "2004-05-01"
+      stopping_on: "2009-01-01"
+    - id: lt_vat_standard_2009_01
+      rate: "0.190"
+      starting_on: "2009-01-01"
+      stopping_on: "2009-09-01"
+    - id: lt_vat_standard_2009_09
+      rate: "0.210"
+      starting_on: "2009-09-01"
+  - id: lt_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: lt_vat_intermediate_2004
+      rate: "0.090"
+      starting_on: "2004-05-01"
+  - id: lt_vat_reduced
+    name: Reduced
+    rates:
+    - id: lt_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+
+- &lu_vat
+  name: Luxembourg VAT
+  zone: *vat_zone_lu
+  tax_codes:
+  - id: lu_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: lu_vat_standard_1992
+      rate: "0.150"
+      starting_on: "1992-01-01"
+      stopping_on: "2015-01-01"
+    - id: lu_vat_standard_2015
+      rate: "0.170"
+      starting_on: "2015-01-01"
+  - id: lu_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: lu_vat_intermediate_1979
+      rate: "0.120"
+      starting_on: "1979-02-12"
+      stopping_on: "2015-01-01"
+    - id: lu_vat_intermediate_2015
+      rate: "0.140"
+      starting_on: "2015-01-01"
+  - id: lu_vat_reduced
+    name: Reduced
+    rates:
+    - id: lu_vat_reduced_1983
+      rate: "0.060"
+      starting_on: "1983-07-01"
+      stopping_on: "2015-01-01"
+    - id: lu_vat_reduced_2015
+      rate: "0.080"
+      starting_on: "2015-01-01"
+  - id: lu_vat_super_reduced
+    name: Super Reduced
+    rates:
+    - id: lu_vat_super_reduced_1983
+      rate: "0.030"
+      starting_on: "1983-07-01"
+
+- &lv_vat
+  name: Latvian VAT
+  zone: *vat_zone_lv
+  tax_codes:
+  - id: lv_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: lv_vat_standard_2004
+      rate: "0.180"
+      starting_on: "2004-05-01"
+      stopping_on: "2009-01-01"
+    - id: lv_vat_standard_2009
+      rate: "0.210"
+      starting_on: "2009-01-01"
+      stopping_on: "2011-01-01"
+    - id: lv_vat_standard_2011
+      rate: "0.220"
+      starting_on: "2011-01-01"
+      stopping_on: "2012-07-01"
+    - id: lv_vat_standard_2012
+      rate: "0.210"
+      starting_on: "2012-07-01"
+  - id: lv_vat_reduced
+    name: Reduced
+    rates:
+    - id: lv_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+      stopping_on: "2009-01-01"
+    - id: lv_vat_reduced_2009
+      rate: "0.100"
+      starting_on: "2009-01-01"
+      stopping_on: "2011-01-01"
+    - id: lv_vat_reduced_2011
+      rate: "0.120"
+      starting_on: "2011-01-01"
+
+- &mt_vat
+  name: Maltese VAT
+  zone: *vat_zone_mt
+  tax_codes:
+  - id: mt_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: mt_vat_standard_2004
+      rate: "0.180"
+      starting_on: "2004-05-01"
+  - id: mt_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: mt_vat_intermediate_2011
+      rate: "0.070"
+      starting_on: "2011-01-01"
+  - id: mt_vat_reduced
+    name: Reduced
+    rates:
+    - id: mt_vat_reduced_2004
+      rate: "0.050"
+      starting_on: "2004-05-01"
+
+- &nl_vat
+  name: Dutch VAT
+  zone: *vat_zone_nl
+  tax_codes:
+  - id: nl_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: nl_vat_standard_2001
+      rate: "0.190"
+      starting_on: "2001-01-01"
+      stopping_on: "2012-10-01"
+    - id: nl_vat_standard_2012
+      rate: "0.210"
+      starting_on: "2012-10-01"
+  - id: nl_vat_reduced
+    name: Reduced
+    rates:
+    - id: nl_vat_reduced_1986
+      rate: "0.060"
+      starting_on: "1986-10-01"
+
+- &pl_vat
+  name: Polish VAT
+  zone: *vat_zone_pl
+  tax_codes:
+  - id: pl_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: pl_vat_standard_2004
+      rate: "0.220"
+      starting_on: "2004-05-01"
+      stopping_on: "2011-01-01"
+    - id: pl_vat_standard_2011
+      rate: "0.230"
+      starting_on: "2011-01-01"
+      stopping_on: "2016-01-01"
+    - id: pl_vat_standard_2016
+      rate: "0.220"
+      starting_on: "2016-01-01"
+  - id: pl_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: pl_vat_intermediate_2004
+      rate: "0.070"
+      starting_on: "2004-05-01"
+      stopping_on: "2011-01-01"
+    - id: pl_vat_intermediate_2011
+      rate: "0.080"
+      starting_on: "2011-01-01"
+  - id: pl_vat_reduced
+    name: Reduced
+    rates:
+    - id: pl_vat_reduced_2004
+      rate: "0.030"
+      starting_on: "2004-05-01"
+      stopping_on: "2011-01-01"
+    - id: pl_vat_reduced_2011
+      rate: "0.050"
+      starting_on: "2011-01-01"
+
+- &pt_30_vat
+  name: Madeiran VAT
+  zone: *vat_zone_pt_30
+  tax_codes:
+  - id: pt_30_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: pt_30_vat_standard_2005
+      rate: "0.150"
+      starting_on: "2005-07-01"
+      stopping_on: "2008-07-01"
+    - id: pt_30_vat_standard_2008
+      rate: "0.140"
+      starting_on: "2008-07-01"
+      stopping_on: "2010-07-01"
+    - id: pt_30_vat_standard_2010
+      rate: "0.150"
+      starting_on: "2010-07-01"
+      stopping_on: "2011-01-01"
+    - id: pt_30_vat_standard_2011
+      rate: "0.160"
+      starting_on: "2011-01-01"
+      stopping_on: "2012-04-01"
+    - id: pt_30_vat_standard_2012
+      rate: "0.220"
+      starting_on: "2012-04-01"
+  - id: pt_30_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: pt_30_vat_intermediate_1996
+      rate: "0.080"
+      starting_on: "1996-07-01"
+      stopping_on: "2010-07-01"
+    - id: pt_30_vat_intermediate_2010
+      rate: "0.090"
+      starting_on: "2010-07-01"
+      stopping_on: "2012-04-01"
+    - id: pt_30_vat_intermediate_2012
+      rate: "0.120"
+      starting_on: "2012-04-01"
+  - id: pt_30_vat_reduced
+    name: Reduced
+    rates:
+    - id: pt_30_vat_reduced_1995
+      rate: "0.040"
+      starting_on: "1995-01-01"
+      stopping_on: "2012-04-01"
+    - id: pt_30_vat_reduced_2012
+      rate: "0.050"
+      starting_on: "2012-04-01"
+
+- &pt_vat
+  name: Portugese VAT
+  zone: *vat_zone_pt
+  tax_codes:
+  - id: pt_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: pt_vat_standard_2005
+      rate: "0.210"
+      starting_on: "2005-07-01"
+      stopping_on: "2008-07-01"
+    - id: pt_vat_standard_2008
+      rate: "0.200"
+      starting_on: "2008-07-01"
+      stopping_on: "2010-07-01"
+    - id: pt_vat_standard_2010
+      rate: "0.210"
+      starting_on: "2010-07-01"
+      stopping_on: "2011-01-01"
+    - id: pt_vat_standard_2011
+      rate: "0.230"
+      starting_on: "2011-01-01"
+  - id: pt_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: pt_vat_intermediate_1996
+      rate: "0.120"
+      starting_on: "1996-07-01"
+      stopping_on: "2010-07-01"
+    - id: pt_vat_intermediate_2010
+      rate: "0.130"
+      starting_on: "2010-07-01"
+  - id: pt_vat_reduced
+    name: Reduced
+    rates:
+    - id: pt_vat_reduced_1996
+      rate: "0.050"
+      starting_on: "1996-07-01"
+      stopping_on: "2010-07-01"
+    - id: pt_vat_reduced_2010
+      rate: "0.060"
+      starting_on: "2010-07-01"
+
+- &ro_vat
+  name: Romanian VAT
+  zone: *vat_zone_ro
+  tax_codes:
+  - id: ro_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: ro_vat_standard_2007
+      rate: "0.190"
+      starting_on: "2007-01-01"
+      stopping_on: "2010-07-01"
+    - id: ro_vat_standard_2010
+      rate: "0.240"
+      starting_on: "2010-07-01"
+      stopping_on: "2016-01-01"
+    - id: ro_vat_standard_2016
+      rate: "0.200"
+      starting_on: "2016-01-01"
+      stopping_on: "2017-01-01"
+    - id: ro_vat_standard_2017
+      rate: "0.190"
+      starting_on: "2017-01-01"
+  - id: ro_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: ro_vat_intermediate_2008
+      rate: "0.090"
+      starting_on: "2008-12-01"
+  - id: ro_vat_reduced
+    name: Reduced
+    rates:
+    - id: ro_vat_reduced_2008
+      rate: "0.050"
+      starting_on: "2008-12-01"
+
+- &se_vat
+  name: Swedish VAT
+  zone: *vat_zone_se
+  tax_codes:
+  - id: se_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: se_vat_standard_1995
+      rate: "0.250"
+      starting_on: "1995-01-01"
+  - id: se_vat_intermediate
+    name: Intermediate
+    rates:
+    - id: se_vat_intermediate_1995
+      rate: "0.120"
+      starting_on: "1995-01-01"
+  - id: se_vat_reduced
+    name: Reduced
+    rates:
+    - id: se_vat_reduced_1996
+      rate: "0.060"
+      starting_on: "1996-01-01"
+
+- &si_vat
+  name: Slovenian VAT
+  zone: *vat_zone_si
+  tax_codes:
+  - id: si_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: si_vat_standard_2004
+      rate: "0.200"
+      starting_on: "2004-05-01"
+      stopping_on: "2013-07-01"
+    - id: si_vat_standard_2013
+      rate: "0.220"
+      starting_on: "2013-07-01"
+  - id: si_vat_reduced
+    name: Reduced
+    rates:
+    - id: si_vat_reduced_2004
+      rate: "0.085"
+      starting_on: "2004-05-01"
+      stopping_on: "2013-07-01"
+    - id: si_vat_reduced_2013
+      rate: "0.095"
+      starting_on: "2013-07-01"
+
+- &sk_vat
+  name: Slovakian VAT
+  zone: *vat_zone_sk
+  tax_codes:
+  - id: sk_vat_standard
+    name: Standard
+    default: true
+    rates:
+    - id: sk_vat_standard_2001
+      rate: "0.190"
+      starting_on: "2004-05-01"
+      stopping_on: "2011-01-01"
+    - id: sk_vat_standard_2011
+      rate: "0.200"
+      starting_on: "2011-01-01"
+  - id: sk_vat_reduced
+    name: Reduced
+    rates:
+    - id: sk_vat_reduced_2011
+      rate: "0.100"
+      starting_on: "2011-01-01"
+
+
+taxes:
+- name: European VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *at_vat
+  - *be_vat
+  - *bg_vat
+  - *cy_vat
+  - *cz_vat
+  - *de_vat
+  - *dk_vat
+  - *ee_vat
+  - *es_vat
+  - *fi_vat
+  - *fr_vat
+  - *fr_h_vat
+  - *gb_vat
+  - *gr_vat
+  - *gr_x_vat
+  - *hr_vat
+  - *hu_vat
+  - *ie_vat
+  - *it_vat
+  - *lt_vat
+  - *lu_vat
+  - *lv_vat
+  - *mt_vat
+  - *nl_vat
+  - *pl_vat
+  - *pt_vat
+  - *pt_20_vat
+  - *pt_30_vat
+  - *ro_vat
+  - *se_vat
+  - *si_vat
+  - *sk_vat
+- name: European Intra-Community VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *eu_vat
+- name: Australian GST
+  display_inclusive: true
+  generic_label: gst
+  bundles:
+  - *au_gst
+- name: Swiss VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *ch_vat
+- name: French Oversea Departments (DOM) VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *fr_x_vat
+- name: Iceland VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *is_vat
+- name: Norway (VAT)
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *no_vat
+- name: South African VAT
+  display_inclusive: true
+  generic_label: vat
+  bundles:
+  - *za_vat
+
