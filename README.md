@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-Kill Bill Simple Tax Plugin
+Kill Bill Simple Tax Plugin [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/killbill-simple-tax-plugin/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
 ===========================
 
 This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements
