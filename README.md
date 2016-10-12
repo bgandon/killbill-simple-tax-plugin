@@ -271,7 +271,3 @@ Copyright © 2015-2016, Benjamin Gandon
 
 As the rest of the Kill Bill platform, this simple tax plugin is released
 under the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/bgandon/killbill-simple-tax-plugin/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
