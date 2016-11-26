@@ -24,15 +24,15 @@ import java.util.Properties;
 
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.test.helpers.TaxCodeBuilder;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
  * Tests for {@link SimpleTaxConfigurationHandler}.
- * 
+ *
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")

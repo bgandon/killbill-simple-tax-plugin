@@ -82,11 +82,11 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.clock.Clock;
-import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillEventDispatcher.OSGIKillbillEventHandler;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIServiceNotAvailable;
+import org.killbill.billing.osgi.libs.killbill.OSGIConfigPropertiesService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillEventDispatcher.OSGIKillbillEventHandler;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIServiceNotAvailable;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -189,7 +189,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
      *         {@code null} elements.
      */
     @Override
-    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, Iterable<PluginProperty> properties,
+    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, boolean dryRun, Iterable<PluginProperty> properties,
             CallContext callCtx) {
 
         TaxComputationContext taxCtx = createTaxComputationContext(newInvoice, callCtx);

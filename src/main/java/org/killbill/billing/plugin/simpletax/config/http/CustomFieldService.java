@@ -42,7 +42,7 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.billing.util.entity.Pagination;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;

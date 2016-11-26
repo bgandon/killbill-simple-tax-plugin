@@ -49,7 +49,7 @@ import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

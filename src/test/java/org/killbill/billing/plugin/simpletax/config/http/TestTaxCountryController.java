@@ -38,7 +38,7 @@ import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.util.callcontext.TenantContext;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
