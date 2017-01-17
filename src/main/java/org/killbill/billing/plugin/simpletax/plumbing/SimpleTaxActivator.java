@@ -120,7 +120,7 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
         VatinController vatinController = new VatinController(customFieldService, logService);
         TaxCodeController taxCodeController = new TaxCodeController(customFieldService, invoiceService, logService);
-        return new SimpleTaxServlet(vatinController, taxCountryController, taxCodeController);
+        return new SimpleTaxServlet(vatinController, taxCountryController, taxCodeController, killbillAPI);
     }
 
     private <S> void register(Class<S> serviceClass, S serviceInstance, BundleContext context) {
