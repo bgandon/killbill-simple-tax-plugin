@@ -247,9 +247,14 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
         TaxResolver taxResolver = instanciateTaxResolver(taxCtx);
         Map<UUID, TaxCode> newTaxCodes = addMissingTaxCodes(newInvoice, taxResolver, taxCtx, callCtx);
 
+        // Since we're coming from the bus, we need to log-in manually
+        // TODO The plugin should have its own table instead of relying on custom fields for this
+        killbillAPI.getSecurityApi().login("admin", "password");
+
         for (Entry<UUID, TaxCode> entry : newTaxCodes.entrySet()) {
             UUID invoiceItemId = entry.getKey();
             TaxCode taxCode = entry.getValue();
+            // Need to do it by listening to the event since we cannot add custom fields until the invoice is created
             persistTaxCode(taxCode, invoiceItemId, newInvoice, callCtx);
         }
     }
@@ -806,7 +811,10 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
             TaxCode tax = null;
             Set<TaxCode> taxes = existingTaxCodes.get(item.getId());
             // Note: taxes != null as per the Multimap contract
-            if (!taxes.isEmpty()) {
+            if (taxes.isEmpty()) {
+                // For safety, to avoid adjusting old invoices without tax codes
+                return newItems.build();
+            } else {
                 tax = taxes.iterator().next();
             }
 
