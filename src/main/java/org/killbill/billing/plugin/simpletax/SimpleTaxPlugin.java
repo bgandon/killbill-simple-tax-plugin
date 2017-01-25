@@ -813,7 +813,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
             // Note: taxes != null as per the Multimap contract
             if (taxes.isEmpty()) {
                 // For safety, to avoid adjusting old invoices without tax codes
-                return newItems.build();
+                continue;
             } else {
                 tax = taxes.iterator().next();
             }

@@ -100,6 +100,7 @@ import org.killbill.billing.plugin.simpletax.resolving.fixtures.InitFailingTaxRe
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.InvalidConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.PrivateConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.ThrowingTaxResolver;
+import org.killbill.billing.security.api.SecurityApi;
 import org.killbill.billing.tenant.api.TenantUserApi;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.test.helpers.InvoiceBuilder;
@@ -157,6 +158,8 @@ public class TestSimpleTaxPlugin {
     private CustomFieldUserApi customFieldUserApi;
     @Mock
     private CatalogUserApi catalogUserApi;
+    @Mock
+    private SecurityApi securityApi;
 
     @Mock
     private CustomFieldService customFieldService;
@@ -200,6 +203,7 @@ public class TestSimpleTaxPlugin {
         when(services.getInvoiceUserApi()).thenReturn(invoiceUserApi);
         when(services.getTenantUserApi()).thenReturn(tenantUserApi);
         when(services.getCatalogUserApi()).thenReturn(catalogUserApi);
+        when(services.getSecurityApi()).thenReturn(securityApi);
 
         ImmutableMap.Builder<String, String> cfg = ImmutableMap.builder();
         String pfx = PROPERTY_PREFIX;
@@ -886,7 +890,7 @@ public class TestSimpleTaxPlugin {
                                 containsString(accountIdString))), any(IllegalArgumentException.class));
     }
 
-    @Test(groups = "fast")
+    @Test(groups = "fast", enabled = false)
     public void shouldSupportRemovingTaxCodesOnHistoricalInvoices() throws Exception {
         // Given
         initCatalogStub();
