@@ -40,8 +40,8 @@ import java.util.Set;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
-import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
@@ -98,7 +98,7 @@ public class TestSimpleTaxConfig {
             "org.killbill.billing.plugin.simpletax.taxCodes.taxC.taxItem.description", "Tax C",
             "org.killbill.billing.plugin.simpletax.taxCodes.taxC.startingOn", "1985-10-25",
             "org.killbill.billing.plugin.simpletax.taxCodes.taxC.stoppingOn", "2015-10-25",
-            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.country", "FR");
+            "org.killbill.billing.plugin.simpletax.taxCodes.taxC.taxZone", "FR");
     private static final ImmutableMap<String, String> WITH_PRODUCT_A = ImmutableMap.of(
             "org.killbill.billing.plugin.simpletax.products.productA", "plop, taxA");
     private static final ImmutableMap<String, String> WITH_PRODUCT_B = ImmutableMap.of(
@@ -120,7 +120,7 @@ public class TestSimpleTaxConfig {
             .withTaxItemDescription("Tax C")//
             .withStartingOn(new LocalDate("1985-10-25"))//
             .withStoppingOn(new LocalDate("2015-10-25"))//
-            .withCountry(new Country("FR"))//
+            .withTaxZone(new TaxZone("FR"))//
             .build();
 
     @Mock

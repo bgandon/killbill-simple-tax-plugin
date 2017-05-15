@@ -35,9 +35,9 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.TaxCountryRsc;
+import org.killbill.billing.plugin.simpletax.config.http.TaxZoneController.TaxZoneRsc;
 import org.killbill.billing.plugin.simpletax.config.http.VatinController.VATINRsc;
-import org.killbill.billing.plugin.simpletax.internal.Country;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.internal.VATIN;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.test.helpers.ServletMocks;
@@ -55,13 +55,13 @@ import org.testng.annotations.Test;
 @SuppressWarnings("javadoc")
 public class TestSimpleTaxServlet {
     private static final String FR = "FR";
-    private static final Country FRANCE = new Country(FR);
+    private static final TaxZone FRANCE = new TaxZone(FR);
 
     private static final String FR_TEST6_VATIN_NUM = "FR78666666666";
     private static final VATIN FR_TEST6_VATIN = new VATIN(FR_TEST6_VATIN_NUM);
 
     private static final String VATINS_RSC_URI = "/vatins";
-    private static final String TAX_COUNTRIES_RSC_URI = "/taxCountries";
+    private static final String TAX_COUNTRIES_RSC_URI = "/taxZones";
     private static final String APPLICATION_JSON = "application/json";
     private static final String ACCOUNT_PARAM_NAME = "account";
 
@@ -72,7 +72,7 @@ public class TestSimpleTaxServlet {
     }
 
     @Mock
-    private TaxCountryController taxCountryController;
+    private TaxZoneController taxZoneController;
     @Mock
     private VatinController vatinController;
 
@@ -80,7 +80,7 @@ public class TestSimpleTaxServlet {
     private SimpleTaxServlet servlet;
 
     @Captor
-    private ArgumentCaptor<TaxCountryRsc> taxCountryRsc;
+    private ArgumentCaptor<TaxZoneRsc> taxZoneRsc;
     @Captor
     private ArgumentCaptor<VATINRsc> vatinRsc;
 
@@ -100,7 +100,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
@@ -120,46 +120,46 @@ public class TestSimpleTaxServlet {
         // Given
         ServletMocks mocks = new ServletMocks();
         withTenant(mocks.req());
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
 
         // When
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
     @Test(groups = "fast")
-    public void shouldDispatchGetAccountTaxCountry() throws Exception {
+    public void shouldDispatchGetAccountTaxZone() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
 
         // When
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).getAccountTaxCountry(accountId, tenant);
+        verify(taxZoneController).getAccountTaxZone(accountId, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
     }
 
     @Test(groups = "fast")
-    public void shouldRenderAccountTaxCountry() throws Exception {
+    public void shouldRenderAccountTaxZone() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
 
-        TaxCountryRsc rsc = new TaxCountryRsc(accountId, FRANCE);
-        when(taxCountryController.getAccountTaxCountry(accountId, tenant)).thenReturn(rsc);
+        TaxZoneRsc rsc = new TaxZoneRsc(accountId, FRANCE);
+        when(taxZoneController.getAccountTaxZone(accountId, tenant)).thenReturn(rsc);
 
         // When
         servlet.doGet(mocks.req(), mocks.resp());
@@ -167,7 +167,7 @@ public class TestSimpleTaxServlet {
         // Then
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
-        assertEquals(mocks.getResponseContent(), "{\"accountId\":\"" + accountId + "\",\"taxCountry\":\"" + FR + "\"}");
+        assertEquals(mocks.getResponseContent(), "{\"accountId\":\"" + accountId + "\",\"taxZone\":\"" + FR + "\"}");
     }
 
     @Test(groups = "fast")
@@ -183,7 +183,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).getAccountVatin(eq(accountId), eq(tenant));
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
@@ -196,10 +196,10 @@ public class TestSimpleTaxServlet {
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
 
         VATINRsc rsc = new VATINRsc(accountId, FR_TEST6_VATIN);
-        when(taxCountryController.getAccountTaxCountry(accountId, tenant)).thenReturn(rsc);
+        when(taxZoneController.getAccountTaxZone(accountId, tenant)).thenReturn(rsc);
 
         // When
         servlet.doGet(mocks.req(), mocks.resp());
@@ -223,14 +223,14 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
-    // ==================== GET /taxCountries?account=... ====================
+    // ==================== GET /taxZones?account=... ====================
 
     @Test(groups = "fast")
-    public void shouldDispatchGetTaxCountries() throws Exception {
+    public void shouldDispatchGetTaxZones() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
@@ -242,13 +242,13 @@ public class TestSimpleTaxServlet {
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).listTaxCountries(null, tenant);
+        verify(taxZoneController).listTaxZones(null, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
     }
 
     @Test(groups = "fast")
-    public void shouldDispatchGetTaxCountriesWhenAccountRestrictionIsBlank() throws Exception {
+    public void shouldDispatchGetTaxZonesWhenAccountRestrictionIsBlank() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
@@ -261,13 +261,13 @@ public class TestSimpleTaxServlet {
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).listTaxCountries(null, tenant);
+        verify(taxZoneController).listTaxZones(null, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
     }
 
     @Test(groups = "fast", dataProvider = "invalidAccountUUIDs")
-    public void shouldRespondBadRequestWhenDispatchingGetTaxCountriesWithInvalidAccountRestriction(String accountId)
+    public void shouldRespondBadRequestWhenDispatchingGetTaxZonesWithInvalidAccountRestriction(String accountId)
             throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
@@ -280,12 +280,12 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
     @Test(groups = "fast")
-    public void shouldDispatchGetTaxCountriesWithAccountRestriction() throws Exception {
+    public void shouldDispatchGetTaxZonesWithAccountRestriction() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
@@ -299,7 +299,7 @@ public class TestSimpleTaxServlet {
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).listTaxCountries(accountId, tenant);
+        verify(taxZoneController).listTaxZones(accountId, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
     }
@@ -318,7 +318,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).listVatins(null, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
@@ -337,7 +337,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).listVatins(null, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
@@ -357,7 +357,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
@@ -375,7 +375,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).listVatins(accountId, tenant);
         assertEquals(mocks.getResponseContentType(), APPLICATION_JSON);
         assertEquals(mocks.getResponseStatus(), SC_OK);
@@ -394,7 +394,7 @@ public class TestSimpleTaxServlet {
         servlet.doGet(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
@@ -409,108 +409,106 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
-    // ===== PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry =====
+    // ===== PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone =====
 
     @Test(groups = "fast", dataProvider = "invalidAccountUUIDs")
     public void shouldRespondNotFoundWhenDispatchingPutAccountResourceWithNoAccount(String accountId) throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         withTenant(mocks.req());
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
 
         // When
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 
     @Test(groups = "fast")
-    public void shouldRespondBadRequestWhenDispatchingPutAccountTaxCountryWithNullBody() throws Exception {
+    public void shouldRespondBadRequestWhenDispatchingPutAccountTaxZoneWithNullBody() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
         mocks.withRequestBody("null");
 
         // When
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
     @Test(groups = "fast")
-    public void shouldRespondInternalServerErrorWhenSavingAccountTaxCountryFails() throws Exception {
+    public void shouldRespondInternalServerErrorWhenSavingAccountTaxZoneFails() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
-        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxCountry\":\"" + FR + "\"}");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
+        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxZone\":\"" + FR + "\"}");
 
         // When
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).saveAccountTaxCountry(eq(accountId), taxCountryRsc.capture(), eq(tenant));
-        assertEquals(taxCountryRsc.getValue().accountId, accountId);
-        assertEquals(taxCountryRsc.getValue().taxCountry, FRANCE);
+        verify(taxZoneController).saveAccountTaxZone(eq(accountId), taxZoneRsc.capture(), eq(tenant));
+        assertEquals(taxZoneRsc.getValue().accountId, accountId);
+        assertEquals(taxZoneRsc.getValue().taxZone, FRANCE);
         assertEquals(mocks.getResponseStatus(), SC_INTERNAL_SERVER_ERROR);
     }
 
     @Test(groups = "fast")
-    public void shouldRespondBadRequestWhenDispatchingPutAccountTaxCountryWithInvalidCountry() throws Exception {
+    public void shouldRespondBadRequestWhenDispatchingPutAccountTaxZoneWithInvalidCountry() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
-        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxCountry\":\"KK\"}");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
+        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxZone\":\"KK\"}");
 
-        when(taxCountryController.saveAccountTaxCountry(eq(accountId), any(TaxCountryRsc.class), eq(tenant)))
-                .thenReturn(true);
+        when(taxZoneController.saveAccountTaxZone(eq(accountId), any(TaxZoneRsc.class), eq(tenant))).thenReturn(true);
 
         // When
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
     @Test(groups = "fast")
-    public void shouldDispatchPutAccountTaxCountry() throws Exception {
+    public void shouldDispatchPutAccountTaxZone() throws Exception {
         // Given
         ServletMocks mocks = new ServletMocks();
         Tenant tenant = withTenant(mocks.req());
 
         UUID accountId = randomUUID();
-        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxCountry");
-        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxCountry\":\"" + FR + "\"}");
+        when(mocks.req().getPathInfo()).thenReturn("/accounts/" + accountId + "/taxZone");
+        mocks.withRequestBody("{\"accountId\":\"" + accountId + "\",\"taxZone\":\"" + FR + "\"}");
 
-        when(taxCountryController.saveAccountTaxCountry(eq(accountId), any(TaxCountryRsc.class), eq(tenant)))
-                .thenReturn(true);
+        when(taxZoneController.saveAccountTaxZone(eq(accountId), any(TaxZoneRsc.class), eq(tenant))).thenReturn(true);
 
         // When
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
         verifyZeroInteractions(vatinController);
-        verify(taxCountryController).saveAccountTaxCountry(eq(accountId), taxCountryRsc.capture(), eq(tenant));
-        assertEquals(taxCountryRsc.getValue().accountId, accountId);
-        assertEquals(taxCountryRsc.getValue().taxCountry, FRANCE);
+        verify(taxZoneController).saveAccountTaxZone(eq(accountId), taxZoneRsc.capture(), eq(tenant));
+        assertEquals(taxZoneRsc.getValue().accountId, accountId);
+        assertEquals(taxZoneRsc.getValue().taxZone, FRANCE);
         assertEquals(mocks.getResponseStatus(), SC_CREATED);
     }
 
@@ -530,7 +528,7 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
@@ -548,7 +546,7 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).saveAccountVatin(eq(accountId), vatinRsc.capture(), eq(tenant));
         assertEquals(vatinRsc.getValue().accountId, accountId);
         assertEquals(vatinRsc.getValue().vatin, FR_TEST6_VATIN);
@@ -571,7 +569,7 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_BAD_REQUEST);
     }
 
@@ -591,7 +589,7 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController);
+        verifyZeroInteractions(taxZoneController);
         verify(vatinController).saveAccountVatin(eq(accountId), vatinRsc.capture(), eq(tenant));
         assertEquals(vatinRsc.getValue().accountId, accountId);
         assertEquals(vatinRsc.getValue().vatin, FR_TEST6_VATIN);
@@ -613,7 +611,7 @@ public class TestSimpleTaxServlet {
         servlet.doPut(mocks.req(), mocks.resp());
 
         // Then
-        verifyZeroInteractions(taxCountryController, vatinController);
+        verifyZeroInteractions(taxZoneController, vatinController);
         assertEquals(mocks.getResponseStatus(), SC_NOT_FOUND);
     }
 }

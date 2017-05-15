@@ -31,7 +31,7 @@ import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
 import org.killbill.billing.plugin.simpletax.config.http.InvoiceService;
 import org.killbill.billing.plugin.simpletax.config.http.SimpleTaxServlet;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController;
-import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController;
+import org.killbill.billing.plugin.simpletax.config.http.TaxZoneController;
 import org.killbill.billing.plugin.simpletax.config.http.VatinController;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
@@ -126,10 +126,10 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
     }
 
     private HttpServlet createServlet(CustomFieldService customFieldService, InvoiceService invoiceService) {
-        TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
+        TaxZoneController taxZoneController = new TaxZoneController(customFieldService, logService);
         VatinController vatinController = new VatinController(customFieldService, logService);
         TaxCodeController taxCodeController = new TaxCodeController(customFieldService, invoiceService, logService);
-        return new SimpleTaxServlet(vatinController, taxCountryController, taxCodeController);
+        return new SimpleTaxServlet(vatinController, taxZoneController, taxCodeController);
     }
 
     private <S> void register(Class<S> serviceClass, S serviceInstance, BundleContext context) {

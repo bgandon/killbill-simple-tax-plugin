@@ -49,7 +49,7 @@ services that started being sold in 2013.)
 
 To deal with that cutoff date (which is well known in France, but everybody
 around the world is not supposed to know, sorry for that), the example config
-sets up 2 tax codes : `VAT_FR_std_2000_19_6%` and then `VAT_FR_std_2014_20_0%`
+sets up 2 tax codes: `VAT_FR_std_2000_19_6%` and then `VAT_FR_std_2014_20_0%`
 (Please note that the percent sign is just a valid character for a tax code
 label; it’s just plain text with no special meaning.)
 
@@ -59,7 +59,7 @@ If you dig into the details of the first one, you’ll see these properties:
     [...].rate = 0.196
     [...].startingOn = 2012-01-01
     [...].stoppingOn = 2014-01-01
-    [...].country = FR
+    [...].taxZone = FR
 
 So the “startingOn” and the “stoppingOn” properly model the cutoff dates to
 apply with that tax rate of 19.6%.
@@ -67,9 +67,8 @@ apply with that tax rate of 19.6%.
 If you read the properties of `VAT_FR_std_2014_20_0%`, you’ll notice that the
 “stoppingOn” cutoff date is not set. That’s because it’s the current rate to
 apply, and nobody knows yet until when. When the rate will change, the
-“stoppingOn” property will have to be set and a new tax code will have to be
-defined withe the same “startingOn” date in order to properly model the new
-rate.
+“stoppingOn” property shall be set and a new tax code shall be defined with
+the same “startingOn” date in order to properly model the new rate.
 
 This comes down to a very important principle in the simple-tax plugin:
 **configured tax codes should always be considered immutables, except their
@@ -84,12 +83,12 @@ Had we charged a “Standard” car rental from 2013-12-01 until 2013-12-31, the
 the `TaxResolver` resolution would have led to a 19.6% VAT rate because
 2013-12-31 is in 2013.
 
-### Tax Countries
+### Tax Zones
 
-The “country” property of a tax code models a territorial restriction: the tax
+The “taxZone” property of a tax code models a territorial restriction: the tax
 codes of the example configuration shall only apply to accounts that have
-“taxCountry” properties of “FR”. Any account with no “taxCountry” set or any
-“taxCountry” other than “FR” will not be elligible to any of these French tax
+“taxZone” properties of “FR”. Any account with no “taxZone” set or any
+“taxZone” other than “FR” will not be elligible to any of these French tax
 codes in their invoices.
 
 
@@ -113,7 +112,8 @@ curl -v \
      -H 'X-Killbill-CreatedBy: admin' \
      -H 'Content-Type: text/plain' \
      -d \
-'org.killbill.billing.plugin.simpletax.taxResolver = org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver
+'org.killbill.billing.plugin.simpletax.merchantTaxZone = FR
+org.killbill.billing.plugin.simpletax.taxResolver = org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver
 org.killbill.billing.plugin.simpletax.taxItem.amount.precision = 2
 
 # French tax codes (limited set)
@@ -122,13 +122,13 @@ org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.taxItem.des
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.rate = 0.196
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.startingOn = 2000-04-01
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.stoppingOn = 2014-01-01
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.country = FR
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2000_19_6%.zone = FR
 
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.taxItem.description = VAT 20%
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.rate = 0.200
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.startingOn = 2014-01-01
 org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.stoppingOn =
-org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.country = FR
+org.killbill.billing.plugin.simpletax.taxCodes.VAT_FR_std_2014_20_0%.zone = FR
 
 # Catalog Products
 
@@ -169,27 +169,35 @@ The base JSON payload for VATINs follows this structure:
 ```
 
 
-#### Assigning tax countries to accounts
+#### Assigning Tax Zones to accounts
 
-The “taxCountry” endpoints allow assigning a [two-letter country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
-to an account. Tax codes that are restricted to specific countries will only
-apply to accounts that have the same country codes for their tax countries.
-(And tax codes not restricted to any country are considered global; they apply
-to all accounts.)
+The “taxZone” endpoints allow assigning as administrative zone (usually a
+country) in which a customer account is declaring and paying its taxes.
 
-Method | URI                                                   | OK  | Error Statuses
--------|-------------------------------------------------------|-----|------------------------------------------
-GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
-PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
-GET    | /taxCountries                                         | 200 | -
-GET    | /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+A tax zone is composed of two parts separated by an underscore `_` character.
+1. A mandatory [two-letter country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
+2. An optional tax zone refinement identifier string with no spaces.
 
-The base JSON payload for tax countries follows this structure:
+Examples: `FR` (metropolitan France excluding Corsica), and `FR_CORSICA` (only
+Corsica)
+
+A Tax Code that is restricted to a specific Tax Zone will only apply to
+accounts that have the exact same Tax Zone. (And tax codes not restricted to
+any zone are considered global—they apply to all accounts.)
+
+Method | URI                                               | OK  | Error Statuses
+-------|---------------------------------------------------|-----|------------------------------------------
+GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone | 200 | 404: account ID does not exist for tenant
+PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone | 201 | 400: when tax zone is malformed<br/> 500: when something went wrong while saving value
+GET    | /taxZones                                         | 200 | -
+GET    | /taxZones?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+
+The base JSON payload for tax zones follows this structure:
 
 ```json
 {
   "accountId": "<UUID>",
-  "taxCountry": "<2-Letter-Country-Code>"
+  "taxZone": "<2-Letter-Country-Code>_<any string without any spaces>"
 }
 ```
 

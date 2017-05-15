@@ -46,7 +46,7 @@ public class TestTaxCode {
             .withRate(new BigDecimal("0.06713"))//
             .withStartingOn(yesterday)//
             .withStoppingOn(today)//
-            .withCountry(new Country("FR"))//
+            .withTaxZone(new TaxZone("FR"))//
             .build();
 
     @Test(groups = "fast")
@@ -110,7 +110,7 @@ public class TestTaxCode {
                 + "rate=0.06713,"//
                 + "startingOn=2015-10-25,"//
                 + "stoppingOn=2015-10-26,"//
-                + "country=" + TestUtil.shortIdentityToString(taxTT.getCountry()) + "[code=FR]]");
+                + "taxZone=" + TestUtil.shortIdentityToString(taxTT.getTaxZone()) + "[code=FR]]");
     }
 
     @Test(groups = "fast")
@@ -121,6 +121,6 @@ public class TestTaxCode {
         assertEquals(taxTT.getRate(), new BigDecimal("0.06713"));
         assertEquals(taxTT.getStartingOn(), new LocalDate("2015-10-25"));
         assertEquals(taxTT.getStoppingOn(), new LocalDate("2015-10-26"));
-        assertEquals(taxTT.getCountry(), new Country("FR"));
+        assertEquals(taxTT.getTaxZone(), new TaxZone("FR"));
     }
 }

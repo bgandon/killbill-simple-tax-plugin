@@ -55,8 +55,8 @@ import com.google.common.collect.ImmutableList;
 public class CustomFieldService {
     /** Name of custom fields for account VAT Identification Numbers. */
     public static final String VATIN_CUSTOM_FIELD_NAME = "VATIdNum";
-    /** Name of custom fields for account tax countries. */
-    public static final String TAX_COUNTRY_CUSTOM_FIELD_NAME = "taxCountry";
+    /** Name of custom fields for account tax zones. */
+    public static final String TAX_ZONE_CUSTOM_FIELD_NAME = "taxZone";
 
     private static final long START_OFFSET = 0L;
     private static final long PAGE_SIZE = 100L;

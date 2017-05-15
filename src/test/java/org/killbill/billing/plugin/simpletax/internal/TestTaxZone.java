@@ -30,15 +30,15 @@ import org.testng.annotations.Test;
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")
-public class TestCountry {
+public class TestTaxZone {
 
     private static final Object[][] LEGAL_COUNTRY_CODES = { { "FR" }, { "BE" }, { "CA" }, { "CH" }, { "MA" }, { "DZ" },
             { "TN" }, { "CD" }, { "MU" } };
     private static final Object[][] ILLEGAL_COUNTRY_CODES = { { "" }, { " " }, { "\t" }, { "toto" }, { ".." },
             { "??" }, { "**" }, { " FR" }, { "FR\t" }, { "FRA" } };
 
-    private static final Country US = new Country("US");
-    private static final Country FR = new Country("FR");
+    private static final TaxZone US = new TaxZone("US");
+    private static final TaxZone FR = new TaxZone("FR");
 
     @DataProvider(name = "legalCountryCodes")
     public static Object[][] legalCountryCodes() {
@@ -53,13 +53,13 @@ public class TestCountry {
     @Test(groups = "fast", dataProvider = "illegalCountryCodes", expectedExceptions = IllegalArgumentException.class)
     public void shouldRejectIllegalCountryCodes(String illegalCountryCode) {
         // Expect exception
-        new Country(illegalCountryCode);
+        new TaxZone(illegalCountryCode);
     }
 
     @Test(groups = "fast", dataProvider = "legalCountryCodes")
     public void shouldReturnCountryCode(String legalCountryCode) {
         // Expect
-        assertEquals(new Country(legalCountryCode).getCode(), legalCountryCode);
+        assertEquals(new TaxZone(legalCountryCode).getCode(), legalCountryCode);
     }
 
     @Test(groups = "fast")
@@ -87,7 +87,7 @@ public class TestCountry {
     }
 
     @Test(groups = "fast")
-    public void shouldOutputCountryCode() {
+    public void shouldOutputTaxZoneCode() {
         // Expect
         assertEquals(FR.toString(), shortIdentityToString(FR) + "[code=FR]");
         assertEquals(US.toString(), shortIdentityToString(US) + "[code=US]");

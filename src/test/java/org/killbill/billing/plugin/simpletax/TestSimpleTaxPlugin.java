@@ -44,7 +44,7 @@ import static org.killbill.billing.plugin.TestUtils.buildAccount;
 import static org.killbill.billing.plugin.TestUtils.buildOSGIKillbillAPI;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
 import static org.killbill.billing.plugin.simpletax.config.TestSimpleTaxConfig.TAX_RESOLVER_PROP;
-import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_COUNTRY_CUSTOM_FIELD_NAME;
+import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_ZONE_CUSTOM_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 import static org.killbill.billing.test.helpers.Promise.holder;
@@ -206,7 +206,7 @@ public class TestSimpleTaxPlugin {
         cfg.put(pfx + "taxResolver", InvoiceItemEndDateBasedResolver.class.getName());
         cfg.put(pfx + "taxCodes." + VAT_20_0 + ".taxItem.description", "Test VAT");
         cfg.put(pfx + "taxCodes." + VAT_20_0 + ".rate", "0.20");
-        cfg.put(pfx + "taxCodes." + VAT_20_0 + ".country", FR);
+        cfg.put(pfx + "taxCodes." + VAT_20_0 + ".taxZone", FR);
         cfg.put(pfx + "products.planA-product", VAT_20_0);
 
         plugin = pluginForConfig(cfg.build());
@@ -214,22 +214,22 @@ public class TestSimpleTaxPlugin {
         initInvoices(VAT_20_0);
     }
 
-    private Account createAccount(String taxCountry) {
+    private Account createAccount(String taxZone) {
         Account account = buildAccount(EUR, "ZZ");
-        withTaxCountryOf(taxCountry, account);
+        withTaxZoneOf(taxZone, account);
         return account;
     }
 
-    private void withTaxCountryOf(String taxCountry, Account account) {
+    private void withTaxZoneOf(String taxZone, Account account) {
         UUID accountId = account.getId();
         when(
-                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME), eq(accountId),
+                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_ZONE_CUSTOM_FIELD_NAME), eq(accountId),
                         any(TenantContext.class)))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectType(ACCOUNT)//
                         .withObjectId(accountId)//
-                        .withFieldName(TAX_COUNTRY_CUSTOM_FIELD_NAME)//
-                        .withFieldValue(taxCountry)//
+                        .withFieldName(TAX_ZONE_CUSTOM_FIELD_NAME)//
+                        .withFieldValue(taxZone)//
                         .build());
     }
 
@@ -789,7 +789,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldFilterOutTaxCodesOnIrrelevantCountries() throws Exception {
+    public void shouldFilterOutTaxCodesOnIrrelevantTaxZones() throws Exception {
         // Given
         CallContext context = mock(CallContext.class);
         initCatalogStub();
@@ -818,7 +818,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldSurviveNoCustomFieldForTaxCountry() throws Exception {
+    public void shouldSurviveNoCustomFieldForTaxZone() throws Exception {
         // Given
         CallContext context = mock(CallContext.class);
         initCatalogStub();
@@ -826,7 +826,7 @@ public class TestSimpleTaxPlugin {
         Account account = createAccount("ZZ-boom!");
         UUID accountId = account.getId();
         when(
-                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_COUNTRY_CUSTOM_FIELD_NAME), eq(accountId),
+                customFieldService.findFieldByNameAndAccountAndTenant(eq(TAX_ZONE_CUSTOM_FIELD_NAME), eq(accountId),
                         any(TenantContext.class)))//
                 .thenReturn(null);
         when(accountUserApi.getAccountById(eq(accountId), eq(context))).thenReturn(account);
@@ -853,7 +853,7 @@ public class TestSimpleTaxPlugin {
     }
 
     @Test(groups = "fast")
-    public void shouldComplainOnInvalidTaxCountry() throws Exception {
+    public void shouldComplainOnInvalidTaxZone() throws Exception {
         // Given
         CallContext context = mock(CallContext.class);
         initCatalogStub();
@@ -880,10 +880,9 @@ public class TestSimpleTaxPlugin {
 
         verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
         String accountIdString = account.getId().toString();
-        verify(logService)
-                .log(eq(LOG_ERROR),
-                        argThat(allOf(containsString("ZZ-boom!"), containsString("taxCountry"),
-                                containsString(accountIdString))), any(IllegalArgumentException.class));
+        verify(logService).log(eq(LOG_ERROR),
+                argThat(allOf(containsString("ZZ-boom!"), containsString("taxZone"), containsString(accountIdString))),
+                any(IllegalArgumentException.class));
     }
 
     @Test(groups = "fast")

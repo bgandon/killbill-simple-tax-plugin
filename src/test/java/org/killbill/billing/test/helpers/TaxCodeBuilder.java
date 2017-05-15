@@ -19,7 +19,7 @@ package org.killbill.billing.test.helpers;
 import java.math.BigDecimal;
 
 import org.joda.time.LocalDate;
-import org.killbill.billing.plugin.simpletax.internal.Country;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 
 @SuppressWarnings("javadoc")
@@ -30,11 +30,11 @@ public class TaxCodeBuilder implements Builder<TaxCode> {
     private BigDecimal rate;
     private LocalDate startingOn;
     private LocalDate stoppingOn;
-    private Country country;
+    private TaxZone taxZone;
 
     @Override
     public TaxCode build() {
-        return new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, country);
+        return new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, taxZone);
     }
 
     public TaxCodeBuilder withName(String name) {
@@ -62,8 +62,8 @@ public class TaxCodeBuilder implements Builder<TaxCode> {
         return this;
     }
 
-    public TaxCodeBuilder withCountry(Country country) {
-        this.country = country;
+    public TaxCodeBuilder withTaxZone(TaxZone taxZone) {
+        this.taxZone = taxZone;
         return this;
     }
 

@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.killbill.billing.plugin.core.PluginServlet;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPOSTRsc;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPUTRsc;
-import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.TaxCountryRsc;
+import org.killbill.billing.plugin.simpletax.config.http.TaxZoneController.TaxZoneRsc;
 import org.killbill.billing.plugin.simpletax.config.http.VatinController.VATINRsc;
 import org.killbill.billing.tenant.api.Tenant;
 
@@ -55,10 +55,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * GET /vatins
  * GET /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+}
  *
- * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
- * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
- * GET /taxCountries
- * GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+ * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone
+ * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone
+ * GET /taxZones
+ * GET /taxZones?account={accountId:\w+-\w+-\w+-\w+-\w+}
  *
  * GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
  * POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
@@ -94,9 +94,9 @@ public class SimpleTaxServlet extends PluginServlet {
     private static final int RESOURCE_IDENTIFIER_GROUP = 1;
     private static final int RESOURCE_NAME_GROUP = 2;
     private static final String VATIN_RESOURCE_NAME = "vatin";
-    private static final String TAX_COUNTRY_RESOURCE_NAME = "taxCountry";
+    private static final String TAX_ZONE_RESOURCE_NAME = "taxZone";
 
-    private static final String TAX_COUNTRIES_PATH = "/taxCountries";
+    private static final String TAX_ZONES_PATH = "/taxZones";
     private static final String VATINS_PATH = "/vatins";
     private static final String ACCOUNT_PARAM_NAME = "account";
     private static final Pattern LOOSE_UUID = compile(UUID_LOOSE_PATTERN);
@@ -127,7 +127,7 @@ public class SimpleTaxServlet extends PluginServlet {
 
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    private TaxCountryController taxCountryController;
+    private TaxZoneController taxZoneController;
     private VatinController vatinController;
     private TaxCodeController taxCodeController;
 
@@ -137,15 +137,15 @@ public class SimpleTaxServlet extends PluginServlet {
      *
      * @param vatinController
      *            The VATIN controller to use.
-     * @param taxCountryController
-     *            The tax country controller to use.
+     * @param taxZoneController
+     *            The tax zone controller to use.
      * @param taxCodeController
      *            The tax code controller to use.
      */
-    public SimpleTaxServlet(VatinController vatinController, TaxCountryController taxCountryController,
+    public SimpleTaxServlet(VatinController vatinController, TaxZoneController taxZoneController,
             TaxCodeController taxCodeController) {
         super();
-        this.taxCountryController = taxCountryController;
+        this.taxZoneController = taxZoneController;
         this.vatinController = vatinController;
         this.taxCodeController = taxCodeController;
     }
@@ -154,9 +154,9 @@ public class SimpleTaxServlet extends PluginServlet {
      * This implementation serves these HTTP end points:
      *
      * <pre>
-     * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-     * GET /taxCountries
-     * GET /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+}
+     * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone
+     * GET /taxZones
+     * GET /taxZones?account={accountId:\w+-\w+-\w+-\w+-\w+}
      *
      * GET /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
      * GET /vatins
@@ -189,8 +189,8 @@ public class SimpleTaxServlet extends PluginServlet {
                 return;
             }
             String resourceName = matcher.group(RESOURCE_NAME_GROUP);
-            if (TAX_COUNTRY_RESOURCE_NAME.equals(resourceName)) {
-                Object value = taxCountryController.getAccountTaxCountry(accountId, tenant);
+            if (TAX_ZONE_RESOURCE_NAME.equals(resourceName)) {
+                Object value = taxZoneController.getAccountTaxZone(accountId, tenant);
                 writeJsonOkResponse(value, resp);
                 return;
             } else if (VATIN_RESOURCE_NAME.equals(resourceName)) {
@@ -203,10 +203,10 @@ public class SimpleTaxServlet extends PluginServlet {
             }
         }
 
-        if (TAX_COUNTRIES_PATH.equals(pathInfo)) {
+        if (TAX_ZONES_PATH.equals(pathInfo)) {
             String account = req.getParameter(ACCOUNT_PARAM_NAME);
             if (isBlank(account)) {
-                Object value = taxCountryController.listTaxCountries(null, tenant);
+                Object value = taxZoneController.listTaxZones(null, tenant);
                 writeJsonOkResponse(value, resp);
                 return;
             }
@@ -219,7 +219,7 @@ public class SimpleTaxServlet extends PluginServlet {
                         + ACCOUNT_PARAM_NAME + "]");
                 return;
             }
-            Object value = taxCountryController.listTaxCountries(accountId, tenant);
+            Object value = taxZoneController.listTaxZones(accountId, tenant);
             writeJsonOkResponse(value, resp);
             return;
         }
@@ -337,7 +337,7 @@ public class SimpleTaxServlet extends PluginServlet {
      * <pre>
      * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
      * 
-     * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
+     * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxZone
      * 
      * PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
      * </pre>
@@ -360,23 +360,23 @@ public class SimpleTaxServlet extends PluginServlet {
                 return;
             }
             String resourceName = matcher.group(RESOURCE_NAME_GROUP);
-            if (TAX_COUNTRY_RESOURCE_NAME.equals(resourceName)) {
-                TaxCountryRsc taxCountry;
+            if (TAX_ZONE_RESOURCE_NAME.equals(resourceName)) {
+                TaxZoneRsc taxZone;
                 try {
-                    taxCountry = JSON_MAPPER.readValue(getRequestData(req), TaxCountryRsc.class);
+                    taxZone = JSON_MAPPER.readValue(getRequestData(req), TaxZoneRsc.class);
                 } catch (JsonProcessingException exc) {
-                    taxCountry = null;
+                    taxZone = null;
                 }
-                if (taxCountry == null) {
-                    resp.sendError(SC_BAD_REQUEST, "Invalid tax country resource in request body");
+                if (taxZone == null) {
+                    resp.sendError(SC_BAD_REQUEST, "Invalid tax zone resource in request body");
                     return;
                 }
-                boolean saved = taxCountryController.saveAccountTaxCountry(accountId, taxCountry, tenant);
+                boolean saved = taxZoneController.saveAccountTaxZone(accountId, taxZone, tenant);
                 if (!saved) {
-                    resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save tax country resource");
+                    resp.sendError(SC_INTERNAL_SERVER_ERROR, "Could not save tax zone resource");
                     return;
                 }
-                buildCreatedResponse(accountResourceUri(accountId, TAX_COUNTRY_RESOURCE_NAME), resp);
+                buildCreatedResponse(accountResourceUri(accountId, TAX_ZONE_RESOURCE_NAME), resp);
                 return;
             } else if (VATIN_RESOURCE_NAME.equals(resourceName)) {
                 VATINRsc vatin;

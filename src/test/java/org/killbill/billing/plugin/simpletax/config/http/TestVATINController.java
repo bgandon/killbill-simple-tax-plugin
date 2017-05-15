@@ -74,7 +74,7 @@ public class TestVATINController {
     }
 
     @Test(groups = "fast")
-    public void shouldListNoTaxCountries() throws Exception {
+    public void shouldListNoTaxZones() throws Exception {
         // When
         Object resources = controller.listVatins(randomUUID(), tenant);
 
@@ -118,14 +118,14 @@ public class TestVATINController {
         assertNotNull(resources);
         assertTrue(resources instanceof List);
 
-        List<VATINRsc> taxCountries = check((List<?>) resources, VATINRsc.class);
-        assertEquals(taxCountries.size(), 2);
+        List<VATINRsc> taxZones = check((List<?>) resources, VATINRsc.class);
+        assertEquals(taxZones.size(), 2);
 
-        VATINRsc vatin1 = taxCountries.get(0);
+        VATINRsc vatin1 = taxZones.get(0);
         assertEquals(vatin1.accountId, accountId);
         assertEquals(vatin1.vatin, FR_TEST6);
 
-        VATINRsc vatin2 = taxCountries.get(1);
+        VATINRsc vatin2 = taxZones.get(1);
         assertEquals(vatin2.accountId, accountId);
         assertEquals(vatin2.vatin, FR_TEST7);
     }
@@ -163,12 +163,12 @@ public class TestVATINController {
         // Then
         assertNotNull(resources);
         assertTrue(resources instanceof List);
-        List<VATINRsc> taxCountries = check((List<?>) resources, VATINRsc.class);
-        assertEquals(taxCountries.size(), 1);
+        List<VATINRsc> taxZones = check((List<?>) resources, VATINRsc.class);
+        assertEquals(taxZones.size(), 1);
 
-        VATINRsc taxCountry1 = taxCountries.get(0);
-        assertEquals(taxCountry1.accountId, accountId);
-        assertEquals(taxCountry1.vatin, FR_TEST6);
+        VATINRsc taxZone1 = taxZones.get(0);
+        assertEquals(taxZone1.accountId, accountId);
+        assertEquals(taxZone1.vatin, FR_TEST6);
     }
 
     @Test(groups = "fast")
@@ -193,7 +193,7 @@ public class TestVATINController {
     }
 
     @Test(groups = "fast")
-    public void shouldGetTaxCountry() {
+    public void shouldGetTaxZone() {
         // Given
         UUID accountId = randomUUID();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
@@ -215,7 +215,7 @@ public class TestVATINController {
     }
 
     @Test(groups = "fast")
-    public void shouldGetNoTaxCountry() {
+    public void shouldGetNoTaxZone() {
         // Given
         UUID accountId = randomUUID();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
@@ -226,7 +226,7 @@ public class TestVATINController {
     }
 
     @Test(groups = "fast")
-    public void shouldGetNoTaxCountryWhenInvalid() {
+    public void shouldGetNoTaxZoneWhenInvalid() {
         // Given
         UUID accountId = randomUUID();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//

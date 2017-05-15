@@ -39,7 +39,7 @@ public class TaxCode {
     private BigDecimal rate;
     private LocalDate startingOn;
     private LocalDate stoppingOn;
-    private Country country;
+    private TaxZone taxZone;
 
     /**
      * constructs a new tax code definition.
@@ -59,18 +59,18 @@ public class TaxCode {
      *            The first day on which this tax code will <em>cease</em> to be
      *            applicable, or {@code null} if the tax code has no sunset
      *            date.
-     * @param country
-     *            The country on which this tax code applies.
+     * @param taxZone
+     *            The tax zone (e.g. a Country) in which this tax code applies.
      */
     public TaxCode(String name, String taxItemDescription, BigDecimal rate, LocalDate startingOn, LocalDate stoppingOn,
-            Country country) {
+            TaxZone taxZone) {
         super();
         this.name = name;
         this.taxItemDescription = taxItemDescription;
         this.rate = rate;
         this.startingOn = startingOn;
         this.stoppingOn = stoppingOn;
-        this.country = country;
+        this.taxZone = taxZone;
     }
 
     @Override
@@ -90,7 +90,7 @@ public class TaxCode {
                 .append(taxItemDescription, rhs.taxItemDescription)//
                 .append(startingOn, rhs.startingOn)//
                 .append(stoppingOn, rhs.stoppingOn)//
-                .append(country, rhs.country)//
+                .append(taxZone, rhs.taxZone)//
                 .isEquals()) {
             return false;
         }
@@ -110,7 +110,7 @@ public class TaxCode {
                 .append(rate == null ? 0 : rate.toString())//
                 .append(startingOn)//
                 .append(stoppingOn)//
-                .append(country)//
+                .append(taxZone)//
                 .toHashCode();
     }
 
@@ -122,7 +122,7 @@ public class TaxCode {
                 .append("rate", rate)//
                 .append("startingOn", startingOn)//
                 .append("stoppingOn", stoppingOn)//
-                .append("country", country)//
+                .append("taxZone", taxZone)//
                 .toString();
     }
 
@@ -165,9 +165,9 @@ public class TaxCode {
     }
 
     /**
-     * @return The country on which this tax code applies.
+     * @return The tax zone (e.g. a Country) in which this tax code applies.
      */
-    public Country getCountry() {
-        return country;
+    public TaxZone getTaxZone() {
+        return taxZone;
     }
 }

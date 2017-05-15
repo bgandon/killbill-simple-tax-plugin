@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.killbill.billing.plugin.api.PluginTenantContext;
-import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.TaxCountryRsc;
-import org.killbill.billing.plugin.simpletax.internal.Country;
+import org.killbill.billing.plugin.simpletax.config.http.TaxZoneController.TaxZoneRsc;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.util.callcontext.TenantContext;
@@ -48,9 +48,9 @@ import org.testng.annotations.Test;
  * @author Benjamin Gandon
  */
 @SuppressWarnings("javadoc")
-public class TestTaxCountryController {
-    private static final Country US = new Country("US");
-    private static final Country FR = new Country("FR");
+public class TestTaxZoneController {
+    private static final TaxZone US = new TaxZone("US");
+    private static final TaxZone FR = new TaxZone("FR");
 
     @Mock
     private OSGIKillbillLogService logService;
@@ -58,7 +58,7 @@ public class TestTaxCountryController {
     private CustomFieldService customFieldService;
 
     @InjectMocks
-    private TaxCountryController controller;
+    private TaxZoneController controller;
 
     @Mock
     private Tenant tenant;
@@ -72,9 +72,9 @@ public class TestTaxCountryController {
     }
 
     @Test(groups = "fast")
-    public void shouldListNoTaxCountries() throws Exception {
+    public void shouldListNoTaxZones() throws Exception {
         // When
-        Object resources = controller.listTaxCountries(randomUUID(), tenant);
+        Object resources = controller.listTaxZones(randomUUID(), tenant);
 
         // Then
         assertNotNull(resources);
@@ -100,43 +100,41 @@ public class TestTaxCountryController {
     }
 
     @Test(groups = "fast")
-    public void shouldListTaxCountries() throws Exception {
+    public void shouldListTaxZones() throws Exception {
         // Given
         UUID accountId = randomUUID();
         CustomFieldBuilder builder = new CustomFieldBuilder().withObjectId(accountId);
-        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant("taxCountry", tenantContext))//
+        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant("taxZone", tenantContext))//
                 .thenReturn(newArrayList(//
-                        builder.withFieldName("taxCountry").withFieldValue("FR").build(),//
-                        builder.withFieldName("taxCountry").withFieldValue("US").build()));
+                        builder.withFieldName("taxZone").withFieldValue("FR").build(),//
+                        builder.withFieldName("taxZone").withFieldValue("US").build()));
 
         // When
-        Object resources = controller.listTaxCountries(null, tenant);
+        Object resources = controller.listTaxZones(null, tenant);
 
         // Then
         assertNotNull(resources);
         assertTrue(resources instanceof List);
 
-        List<TaxCountryRsc> taxCountries = check((List<?>) resources, TaxCountryRsc.class);
-        assertEquals(taxCountries.size(), 2);
+        List<TaxZoneRsc> taxZones = check((List<?>) resources, TaxZoneRsc.class);
+        assertEquals(taxZones.size(), 2);
 
-        TaxCountryRsc taxCountry1 = taxCountries.get(0);
-        assertEquals(taxCountry1.accountId, accountId);
-        assertEquals(taxCountry1.taxCountry, FR);
+        TaxZoneRsc taxZone1 = taxZones.get(0);
+        assertEquals(taxZone1.accountId, accountId);
+        assertEquals(taxZone1.taxZone, FR);
 
-        TaxCountryRsc taxCountry2 = taxCountries.get(1);
-        assertEquals(taxCountry2.accountId, accountId);
-        assertEquals(taxCountry2.taxCountry, US);
+        TaxZoneRsc taxZone2 = taxZones.get(1);
+        assertEquals(taxZone2.accountId, accountId);
+        assertEquals(taxZone2.taxZone, US);
     }
 
     @Test(groups = "fast")
-    public void shouldListNoTaxCountry() {
+    public void shouldListNoTaxZone() {
         // Given
-        when(
-                customFieldService.findFieldByNameAndAccountAndTenant(anyString(), any(UUID.class),
-                        eq(tenantContext)))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant(anyString(), any(UUID.class), eq(tenantContext)))//
                 .thenReturn(null);
         // When
-        Object resources = controller.listTaxCountries(randomUUID(), tenant);
+        Object resources = controller.listTaxZones(randomUUID(), tenant);
 
         // Then
         assertNotNull(resources);
@@ -145,115 +143,115 @@ public class TestTaxCountryController {
     }
 
     @Test(groups = "fast")
-    public void shouldListTaxCountryOfAccount() {
+    public void shouldListTaxZoneOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxZone", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
-                        .withFieldName("taxCountry")//
+                        .withFieldName("taxZone")//
                         .withFieldValue("FR")//
                         .build());
 
         // When
-        Object resources = controller.listTaxCountries(accountId, tenant);
+        Object resources = controller.listTaxZones(accountId, tenant);
 
         // Then
         assertNotNull(resources);
         assertTrue(resources instanceof List);
-        List<TaxCountryRsc> taxCountries = check((List<?>) resources, TaxCountryRsc.class);
-        assertEquals(taxCountries.size(), 1);
+        List<TaxZoneRsc> taxZones = check((List<?>) resources, TaxZoneRsc.class);
+        assertEquals(taxZones.size(), 1);
 
-        TaxCountryRsc taxCountry1 = taxCountries.get(0);
-        assertEquals(taxCountry1.accountId, accountId);
-        assertEquals(taxCountry1.taxCountry, FR);
+        TaxZoneRsc taxZone1 = taxZones.get(0);
+        assertEquals(taxZone1.accountId, accountId);
+        assertEquals(taxZone1.taxZone, FR);
     }
 
     @Test(groups = "fast")
-    public void shouldNotListInvalidTaxCountryOfAccount() {
+    public void shouldNotListInvalidTaxZoneOfAccount() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxZone", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
-                        .withFieldName("taxCountry")//
+                        .withFieldName("taxZone")//
                         .withFieldValue("boom!")//
                         .build());
 
         // When
-        Object resources = controller.listTaxCountries(accountId, tenant);
+        Object resources = controller.listTaxZones(accountId, tenant);
 
         // Then
         assertNotNull(resources);
         assertTrue(resources instanceof List);
-        List<TaxCountryRsc> taxCountries = check((List<?>) resources, TaxCountryRsc.class);
-        assertEquals(taxCountries.size(), 0);
+        List<TaxZoneRsc> taxZones = check((List<?>) resources, TaxZoneRsc.class);
+        assertEquals(taxZones.size(), 0);
     }
 
     @Test(groups = "fast")
-    public void shouldGetTaxCountry() {
+    public void shouldGetTaxZone() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxZone", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
-                        .withFieldName("taxCountry")//
+                        .withFieldName("taxZone")//
                         .withFieldValue("FR")//
                         .build());
 
         // When
-        Object resource = controller.getAccountTaxCountry(accountId, tenant);
+        Object resource = controller.getAccountTaxZone(accountId, tenant);
 
         // Then
         assertNotNull(resource);
-        assertTrue(resource instanceof TaxCountryRsc);
-        TaxCountryRsc taxCountry = (TaxCountryRsc) resource;
-        assertEquals(taxCountry.accountId, accountId);
-        assertEquals(taxCountry.taxCountry, FR);
+        assertTrue(resource instanceof TaxZoneRsc);
+        TaxZoneRsc taxZone = (TaxZoneRsc) resource;
+        assertEquals(taxZone.accountId, accountId);
+        assertEquals(taxZone.taxZone, FR);
     }
 
     @Test(groups = "fast")
-    public void shouldGetNoTaxCountry() {
+    public void shouldGetNoTaxZone() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxZone", accountId, tenantContext))//
                 .thenReturn(null);
 
         // Expect
-        assertNull(controller.getAccountTaxCountry(accountId, tenant));
+        assertNull(controller.getAccountTaxZone(accountId, tenant));
     }
 
     @Test(groups = "fast")
-    public void shouldGetNoTaxCountryWhenInvalid() {
+    public void shouldGetNoTaxZoneWhenInvalid() {
         // Given
         UUID accountId = randomUUID();
-        when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
+        when(customFieldService.findFieldByNameAndAccountAndTenant("taxZone", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
-                        .withFieldName("taxCountry")//
+                        .withFieldName("taxZone")//
                         .withFieldValue("boom!")//
                         .build());
 
         // Expect
-        assertNull(controller.getAccountTaxCountry(accountId, tenant));
+        assertNull(controller.getAccountTaxZone(accountId, tenant));
     }
 
     @Test(groups = "fast", expectedExceptions = NullPointerException.class)
-    public void shouldNotAcceptNullResourceWhenSavingTaxCountry() {
+    public void shouldNotAcceptNullResourceWhenSavingTaxZone() {
         // Expect exception
-        controller.saveAccountTaxCountry(randomUUID(), null, tenant);
+        controller.saveAccountTaxZone(randomUUID(), null, tenant);
     }
 
     @Test(groups = "fast")
-    public void shouldSaveTaxCountry() {
+    public void shouldSaveTaxZone() {
         // Given
         UUID accountId = randomUUID();
-        TaxCountryRsc taxCountry = new TaxCountryRsc(accountId, FR);
+        TaxZoneRsc taxZone = new TaxZoneRsc(accountId, FR);
 
         // When
-        controller.saveAccountTaxCountry(accountId, taxCountry, tenant);
+        controller.saveAccountTaxZone(accountId, taxZone, tenant);
 
         // Then
-        verify(customFieldService).saveAccountField("FR", "taxCountry", accountId, tenantContext);
+        verify(customFieldService).saveAccountField("FR", "taxZone", accountId, tenantContext);
     }
 }

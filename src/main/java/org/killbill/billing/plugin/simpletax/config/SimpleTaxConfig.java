@@ -23,12 +23,12 @@ import static org.apache.commons.lang3.StringUtils.indexOf;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.startsWith;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.country;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.resolverConstructor;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.taxZone;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
 import static org.osgi.service.log.LogService.LOG_ERROR;
 import static org.osgi.service.log.LogService.LOG_WARNING;
@@ -45,8 +45,8 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
-import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
@@ -135,7 +135,7 @@ public class SimpleTaxConfig {
     private static final String RATE_SUFFIX = ".rate";
     private static final String STARTING_ON_SUFFIX = ".startingOn";
     private static final String STOPPING_ON_SUFFIX = ".stoppingOn";
-    private static final String COUNTRY_SUFFIX = ".country";
+    private static final String TAX_ZONE_SUFFIX = ".taxZone";
 
     /**
      * The default description for
@@ -275,8 +275,8 @@ public class SimpleTaxConfig {
             BigDecimal rate = bigDecimal(cfg, prefix + RATE_SUFFIX, DEFAULT_TAX_RATE);
             LocalDate startingOn = localDate(cfg, prefix + STARTING_ON_SUFFIX, null);
             LocalDate stoppingOn = localDate(cfg, prefix + STOPPING_ON_SUFFIX, null);
-            Country country = country(cfg, prefix + COUNTRY_SUFFIX, null);
-            codes.put(name, new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, country));
+            TaxZone taxZone = taxZone(cfg, prefix + TAX_ZONE_SUFFIX, null);
+            codes.put(name, new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, taxZone));
         }
         return codes.build();
     }

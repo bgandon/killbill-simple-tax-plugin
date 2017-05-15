@@ -31,7 +31,7 @@ import static org.killbill.billing.notification.plugin.api.ExtBusEventType.INVOI
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createAdjustmentItem;
 import static org.killbill.billing.plugin.api.invoice.PluginInvoiceItem.createTaxItem;
 import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.DEFAULT_TAX_ITEM_DESC;
-import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_COUNTRY_CUSTOM_FIELD_NAME;
+import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.TAX_ZONE_CUSTOM_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 import static org.killbill.billing.plugin.simpletax.util.InvoiceHelpers.amountWithAdjustments;
@@ -67,7 +67,7 @@ import org.killbill.billing.plugin.api.PluginTenantContext;
 import org.killbill.billing.plugin.api.invoice.PluginInvoicePluginApi;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
-import org.killbill.billing.plugin.simpletax.internal.Country;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 import org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxConfigurationHandler;
@@ -271,15 +271,15 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
 
         UUID accountId = newInvoice.getAccountId();
         Account account = getAccount(accountId, tenantCtx);
-        CustomField taxCountryField = customFieldService.findFieldByNameAndAccountAndTenant(
-                TAX_COUNTRY_CUSTOM_FIELD_NAME, accountId, tenantCtx);
-        Country accountTaxCountry = null;
-        if (taxCountryField != null) {
+        CustomField taxZoneField = customFieldService.findFieldByNameAndAccountAndTenant(
+                TAX_ZONE_CUSTOM_FIELD_NAME, accountId, tenantCtx);
+        TaxZone accountTaxZone = null;
+        if (taxZoneField != null) {
             try {
-                accountTaxCountry = new Country(taxCountryField.getFieldValue());
+                accountTaxZone = new TaxZone(taxZoneField.getFieldValue());
             } catch (IllegalArgumentException exc) {
-                logService.log(LOG_ERROR, "Illegal value of [" + taxCountryField.getFieldValue() + "] in field '"
-                        + TAX_COUNTRY_CUSTOM_FIELD_NAME + "' for account " + accountId, exc);
+                logService.log(LOG_ERROR, "Illegal value of [" + taxZoneField.getFieldValue() + "] in field '"
+                        + TAX_ZONE_CUSTOM_FIELD_NAME + "' for account " + accountId, exc);
             }
         }
 
@@ -290,7 +290,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
 
         TaxCodeService taxCodeService = taxCodeService(account, allInvoices, cfg, tenantCtx);
 
-        return new TaxComputationContext(cfg, account, accountTaxCountry, allInvoices, toAdjustedAmount,
+        return new TaxComputationContext(cfg, account, accountTaxZone, allInvoices, toAdjustedAmount,
                 byAdjustedAmount, taxCodeService);
     }
 
@@ -517,17 +517,17 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
                 continue;
             }
 
-            final String accountTaxCountry = taxCtx.getAccountTaxCountry() == null ? null : taxCtx
-                    .getAccountTaxCountry().getCode();
-            Iterable<TaxCode> expectedInAccountCountry = filter(expectedTaxCodes, new Predicate<TaxCode>() {
+            final String accountTaxZone = taxCtx.getAccountTaxZone() == null ? null : taxCtx
+                    .getAccountTaxZone().getCode();
+            Iterable<TaxCode> expectedInAccountTaxZone = filter(expectedTaxCodes, new Predicate<TaxCode>() {
                 @Override
                 public boolean apply(TaxCode taxCode) {
-                    Country restrict = taxCode.getCountry();
-                    return (restrict == null) || restrict.getCode().equals(accountTaxCountry);
+                    TaxZone restrict = taxCode.getTaxZone();
+                    return (restrict == null) || restrict.getCode().equals(accountTaxZone);
                 }
             });
             // resolve tax codes using regulation-specific logic
-            TaxCode applicableCode = resolver.applicableCodeForItem(expectedInAccountCountry, item);
+            TaxCode applicableCode = resolver.applicableCodeForItem(expectedInAccountTaxZone, item);
             if (applicableCode == null) {
                 continue;
             }

@@ -18,11 +18,13 @@ package org.killbill.billing.plugin.simpletax.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Locale.getISOCountries;
+import static org.apache.commons.lang3.StringUtils.containsWhitespace;
 import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
 
 import java.util.Locale;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -34,12 +36,13 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * An immutable country, based on ISO 3166-1 alpha-2 standard. This class helps
- * in manipulating consistent, predictable and type-safe country codes.
+ * An immutable tax zone, based on country codes, as defined in the ISO 3166-1
+ * alpha-2 standard. This class helps in manipulating consistent, predictable
+ * and type-safe tax zones.
  *
  * @author Benjamin Gandon
  */
-public class Country {
+public class TaxZone {
 
     private static final Supplier<Set<String>> COUNTRIES = new ConcurrentLazyValue<Set<String>>() {
         @Override
@@ -48,29 +51,55 @@ public class Country {
         }
     };
 
+    private static final char SEPARATOR = '_';
+
+    /**
+     * Extracts the country code from a tax zone code.
+     *
+     * @param code
+     *            A tax zone code. Must not be {@code null}, nor empty.
+     * @return the Country code for the zone code.
+     */
+    private static String extractCountryPart(String code) {
+        String[] parts = StringUtils.split(code, SEPARATOR);
+        return parts[0];
+    }
+
     private String code;
 
     /**
-     * Constructs a new country. The country code must be an element of
-     * {@link Locale#getISOCountries()}.
+     * Constructs a new tax zone. The zone code must start with an element of
+     * {@link Locale#getISOCountries()}. Then, after an underscore '_'
+     * character, a free zone identifier is allowed.
+     * <p>
+     * Tax zone codes must not be {@code null}, nor empty, and they must not
+     * contain any white spaces.
      *
      * @param code
      *            The ISO 3166-1 alpha-2 country code.
      * @throws IllegalArgumentException
-     *             when the country code is not an element of
+     *             when the zone code is not an element of
      *             {@link Locale#getISOCountries()}.
      */
     @JsonCreator
-    public Country(String code) throws IllegalArgumentException {
+    public TaxZone(String code) throws IllegalArgumentException {
         super();
-        checkArgument(COUNTRIES.get().contains(code), "Illegal country code: [%s]", code);
+        checkArgument(StringUtils.isNotBlank(code), "Zone code must not be null, nor empty, nor blank");
+        String[] parts = StringUtils.split(code, SEPARATOR);
+        checkArgument(parts.length > 0, "Zone code must not be empty");
+        String country = parts[0];
+        checkArgument(COUNTRIES.get().contains(country), "Illegal country code: [%s]", code);
+        if (parts.length > 1) {
+            checkArgument(!containsWhitespace(parts[1]), "Must not contain whitespaces");
+        }
         this.code = code;
     }
 
     /**
-     * Returns the ISO 3166-1 alpha-2 code for this country.
+     * Returns the zone code, whose first part before '_' is an ISO 3166-1
+     * alpha-2 country code.
      *
-     * @return The code of this country. Never {@code null}.
+     * @return The code of this zone. Never {@code null}.
      */
     @JsonValue
     public String getCode() {
@@ -88,7 +117,8 @@ public class Country {
      * @return The name of the country in the specified language, or in English.
      */
     public String computeName(Locale language) {
-        return new Locale("", code).getDisplayCountry(language);
+        String country = extractCountryPart(code);
+        return new Locale("", country).getDisplayCountry(language);
     }
 
     @Override
@@ -102,7 +132,7 @@ public class Country {
         if (obj.getClass() != getClass()) {
             return false;
         }
-        Country rhs = (Country) obj;
+        TaxZone rhs = (TaxZone) obj;
         return new EqualsBuilder().append(code, rhs.code).isEquals();
     }
 
@@ -114,7 +144,7 @@ public class Country {
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_STYLE)//
-                .append("code", code)//
-                .toString();
+        .append("code", code)//
+        .toString();
     }
 }

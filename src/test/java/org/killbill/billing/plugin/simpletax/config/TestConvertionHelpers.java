@@ -25,13 +25,13 @@ import static org.joda.time.DateTimeZone.forID;
 import static org.joda.time.DateTimeZone.forOffsetHours;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.convertTimeZone;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.country;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.joinTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.resolverConstructor;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.taxZone;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
 import static org.killbill.billing.test.helpers.TestUtil.assertEqualsIgnoreScale;
@@ -45,8 +45,8 @@ import java.util.Map;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
-import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+import org.killbill.billing.plugin.simpletax.internal.TaxZone;
 import org.killbill.billing.plugin.simpletax.resolving.InvoiceItemEndDateBasedResolver;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
@@ -79,8 +79,9 @@ public class TestConvertionHelpers {
 
     private static final String FR = "FR";
     private static final String US = "US";
-    private static final Country FRANCE = new Country(FR);
-    private static final Country USA = new Country(US);
+    private static final TaxZone FRANCE = new TaxZone(FR);
+    private static final TaxZone USA = new TaxZone(US);
+    private static final TaxZone CORSICA = new TaxZone("FR_CORSICA");
 
     private final LocalDate today = new LocalDate();
     private final LocalDate yesterday = today.minusDays(1);
@@ -241,13 +242,14 @@ public class TestConvertionHelpers {
     }
 
     @Test(groups = "fast")
-    public void shouldConvertCountryWithTrimming() {
+    public void shouldConvertTaxZoneWithTrimming() {
         // Expect
-        assertEquals(country(cfgOf("country", FR), "country", USA), FRANCE);
-        assertEquals(country(cfgOf("country", US), "country", FRANCE), USA);
-        assertEquals(country(cfgOf("country", " FR\t"), "country", USA), FRANCE);
-        assertEquals(country(cfgOf("country", "\t"), "country", FRANCE), FRANCE);
-        assertEquals(country(cfgOf("country", "boom"), "country", USA), USA);
+        assertEquals(taxZone(cfgOf("taxZone", FR), "taxZone", USA), FRANCE);
+        assertEquals(taxZone(cfgOf("taxZone", US), "taxZone", FRANCE), USA);
+        assertEquals(taxZone(cfgOf("taxZone", " FR\t"), "taxZone", USA), FRANCE);
+        assertEquals(taxZone(cfgOf("taxZone", "\t"), "taxZone", FRANCE), FRANCE);
+        assertEquals(taxZone(cfgOf("taxZone", "boom"), "taxZone", USA), USA);
+        assertEquals(taxZone(cfgOf("taxZone", " FR_CORSICA\t"), "taxZone", USA), CORSICA);
     }
 
     @Test(groups = "fast", expectedExceptions = NullPointerException.class)
