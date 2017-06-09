@@ -16,15 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax.config.http;
 
-import static java.util.regex.Pattern.compile;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.UUID_LOOSE_PATTERN;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
-import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
-
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,6 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.billing.plugin.core.PluginServlet;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPOSTRsc;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPUTRsc;
@@ -42,6 +36,15 @@ import org.killbill.billing.tenant.api.Tenant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.BaseEncoding;
+
+import static java.util.regex.Pattern.compile;
+import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.UUID_LOOSE_PATTERN;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
+import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 
 /**
  * A {@link PluginServlet} that provides endpoints to setup and review the
@@ -130,24 +133,25 @@ public class SimpleTaxServlet extends PluginServlet {
     private TaxCountryController taxCountryController;
     private VatinController vatinController;
     private TaxCodeController taxCodeController;
+    private OSGIKillbillAPI killbillAPI;
 
     /**
      * Constructs a new servlet for configuring data related to the simple tax
      * plugin.
-     *
-     * @param vatinController
+     *  @param vatinController
      *            The VATIN controller to use.
      * @param taxCountryController
      *            The tax country controller to use.
      * @param taxCodeController
-     *            The tax code controller to use.
+     * @param killbillAPI
      */
     public SimpleTaxServlet(VatinController vatinController, TaxCountryController taxCountryController,
-            TaxCodeController taxCodeController) {
+                            TaxCodeController taxCodeController, OSGIKillbillAPI killbillAPI) {
         super();
         this.taxCountryController = taxCountryController;
         this.vatinController = vatinController;
         this.taxCodeController = taxCodeController;
+        this.killbillAPI = killbillAPI;
     }
 
     /**
@@ -289,6 +293,8 @@ public class SimpleTaxServlet extends PluginServlet {
      */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        login(req);
+
         Tenant tenant = getTenant(req);
         if (tenant == null) {
             buildNotFoundResponse("No tenant specified by the 'X-Killbill-ApiKey'"
@@ -336,14 +342,16 @@ public class SimpleTaxServlet extends PluginServlet {
      *
      * <pre>
      * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin
-     * 
+     *
      * PUT /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry
-     * 
+     *
      * PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
      * </pre>
      */
     @Override
     public void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        login(req);
+
         Tenant tenant = getTenant(req);
         if (tenant == null) {
             buildNotFoundResponse("No tenant specified by the 'X-Killbill-ApiKey'"
@@ -440,5 +448,30 @@ public class SimpleTaxServlet extends PluginServlet {
         byte[] data = JSON_MAPPER.writeValueAsBytes(value);
         setJsonContentType(resp);
         buildOKResponse(data, resp);
+    }
+
+    private void login(final HttpServletRequest req) {
+        String authHeader = req.getHeader("Authorization");
+        if (authHeader == null) {
+            return;
+        }
+
+        final String[] authHeaderChunks = authHeader.split(" ");
+        if (authHeaderChunks.length < 2) {
+            return;
+        }
+
+        try {
+            final String credentials = new String(BaseEncoding.base64().decode(authHeaderChunks[1]), "UTF-8");
+            int p = credentials.indexOf(":");
+            if (p == -1) {
+                return;
+            }
+
+            final String login = credentials.substring(0, p).trim();
+            final String password = credentials.substring(p + 1).trim();
+            killbillAPI.getSecurityApi().login(login, password);
+        } catch (UnsupportedEncodingException ignored) {
+        }
     }
 }

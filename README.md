@@ -34,6 +34,11 @@ The typical use case for this plugin is a regulatory requirement for a bunch
 of fixed [VAT](https://en.wikipedia.org/wiki/Value-added_tax) rates that can
 change once in a while.
 
+Quick start
+-----------
+
+1. Configure the plugin as described below (make sure your products have the right tax codes)
+2. Configure the tax country of each account using the private PUT endpoint `/plugins/killbill-simple-tax/accounts/<ACCOUNT_ID>/taxCountry`. Note: the country on the account will not be used for taxation
 
 How it works
 ------------
@@ -175,10 +180,10 @@ to accounts.
 
 Method | URI                                             | OK  | Error Statuses
 -------|-------------------------------------------------|-----|-------------------------------------------
-GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 200 | 404: account ID does not exist for tenant
-PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 201 | 400: when VATIN is malformed _for sure_ (when VATIN cannot be validated, it is stored as-is) <br/> 500: when something went wrong while saving value
-GET    | /vatins                                         | 200 | -
-GET    | /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+GET    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 200 | 404: account ID does not exist for tenant
+PUT    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 201 | 400: when VATIN is malformed _for sure_ (when VATIN cannot be validated, it is stored as-is) <br/> 500: when something went wrong while saving value
+GET    | /plugins/killbill-simple-tax/vatins                                         | 200 | -
+GET    | /plugins/killbill-simple-tax/vatins?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
 The base JSON payload for VATINs follows this structure:
 
@@ -202,10 +207,10 @@ to all accounts.)
 
 Method | URI                                                   | OK  | Error Statuses
 -------|-------------------------------------------------------|-----|------------------------------------------
-GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
-PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
-GET    | /taxCountries                                         | 200 | -
-GET    | /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+GET    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
+PUT    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
+GET    | /plugins/killbill-simple-tax/taxCountries                                         | 200 | -
+GET    | /plugins/killbill-simple-tax/taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
 The base JSON payload for tax countries follows this structure:
 
@@ -229,11 +234,11 @@ invoice generation process. New tax items or adjustment items will be created
 accordingly to properly match the newly declared taxes.
 
 ```
-GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
-POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+GET /plugins/killbill-simple-tax/invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+POST /plugins/killbill-simple-tax/invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
 
-GET /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
-PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+GET /plugins/killbill-simple-tax/invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+PUT /plugins/killbill-simple-tax/invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
 ```
 
 Payload structure for tax codes:

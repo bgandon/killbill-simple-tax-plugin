@@ -100,6 +100,7 @@ import org.killbill.billing.plugin.simpletax.resolving.fixtures.InitFailingTaxRe
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.InvalidConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.PrivateConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.ThrowingTaxResolver;
+import org.killbill.billing.security.api.SecurityApi;
 import org.killbill.billing.tenant.api.TenantUserApi;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.test.helpers.InvoiceBuilder;
@@ -112,9 +113,9 @@ import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
-import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIConfigPropertiesService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -157,6 +158,8 @@ public class TestSimpleTaxPlugin {
     private CustomFieldUserApi customFieldUserApi;
     @Mock
     private CatalogUserApi catalogUserApi;
+    @Mock
+    private SecurityApi securityApi;
 
     @Mock
     private CustomFieldService customFieldService;
@@ -194,12 +197,13 @@ public class TestSimpleTaxPlugin {
 
         account = createAccount(FR);
 
-        services = buildOSGIKillbillAPI(account, mock(Payment.class), null);
+        services = buildOSGIKillbillAPI(account);
         accountUserApi = services.getAccountUserApi();
         when(services.getCustomFieldUserApi()).thenReturn(customFieldUserApi);
         when(services.getInvoiceUserApi()).thenReturn(invoiceUserApi);
         when(services.getTenantUserApi()).thenReturn(tenantUserApi);
         when(services.getCatalogUserApi()).thenReturn(catalogUserApi);
+        when(services.getSecurityApi()).thenReturn(securityApi);
 
         ImmutableMap.Builder<String, String> cfg = ImmutableMap.builder();
         String pfx = PROPERTY_PREFIX;
@@ -362,7 +366,7 @@ public class TestSimpleTaxPlugin {
     }
 
     private void withInvoices(Invoice... invoices) throws Exception {
-        when(invoiceUserApi.getInvoicesByAccount(account.getId(), context))//
+        when(invoiceUserApi.getInvoicesByAccount(account.getId(), false, context))//
                 .thenReturn(asList(invoices));
 
         for (Invoice invoice : invoices) {
@@ -400,7 +404,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -422,7 +426,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -443,7 +447,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceA, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -473,7 +477,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -487,7 +491,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceC, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -502,7 +506,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -516,7 +520,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 1);
@@ -536,7 +540,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);
@@ -561,7 +565,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -577,13 +581,13 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountWithNullCustomFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(null);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -599,13 +603,13 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountNoCustomFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(ImmutableList.<CustomField> of());
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -622,7 +626,7 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountNonTaxFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX).thenSaveTo(item)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(asList(new CustomFieldBuilder()//
@@ -630,7 +634,7 @@ public class TestSimpleTaxPlugin {
                         .withFieldName("no-tax-field-name").withFieldValue(VAT_20_0).build()));
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -644,7 +648,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect no exception
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
     }
 
     @Test(groups = "fast")
@@ -655,7 +659,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect no exception
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
     }
 
     @Test(groups = "fast")
@@ -666,7 +670,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InstantiationException.class));
     }
@@ -679,7 +683,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InvocationTargetException.class));
     }
@@ -692,7 +696,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceE);
 
         // Expect
-        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, properties, context).size(), 0);
+        assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
         verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(ExceptionInInitializerError.class));
     }
@@ -707,7 +711,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceD);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoiceD, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(invoiceD, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -762,7 +766,7 @@ public class TestSimpleTaxPlugin {
         when(event.getObjectId()).thenReturn(invoiceId);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
         plugin.handleKillbillEvent(event);
 
         // Then
@@ -809,7 +813,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -843,7 +847,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -873,7 +877,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertEquals(items.size(), 0);
@@ -886,7 +890,7 @@ public class TestSimpleTaxPlugin {
                                 containsString(accountIdString))), any(IllegalArgumentException.class));
     }
 
-    @Test(groups = "fast")
+    @Test(groups = "fast", enabled = false)
     public void shouldSupportRemovingTaxCodesOnHistoricalInvoices() throws Exception {
         // Given
         initCatalogStub();
@@ -894,7 +898,7 @@ public class TestSimpleTaxPlugin {
         withInvoices(invoiceH, newInvoice);
 
         // When
-        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, properties, context);
+        List<InvoiceItem> items = plugin.getAdditionalInvoiceItems(newInvoice, false, properties, context);
 
         // Then
         assertTrue(items.size() >= 1);

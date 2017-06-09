@@ -82,11 +82,11 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.clock.Clock;
-import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillEventDispatcher.OSGIKillbillEventHandler;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIServiceNotAvailable;
+import org.killbill.billing.osgi.libs.killbill.OSGIConfigPropertiesService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillEventDispatcher.OSGIKillbillEventHandler;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIServiceNotAvailable;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -189,7 +189,7 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
      *         {@code null} elements.
      */
     @Override
-    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, Iterable<PluginProperty> properties,
+    public List<InvoiceItem> getAdditionalInvoiceItems(Invoice newInvoice, boolean dryRun, Iterable<PluginProperty> properties,
             CallContext callCtx) {
 
         TaxComputationContext taxCtx = createTaxComputationContext(newInvoice, callCtx);
@@ -247,9 +247,14 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
         TaxResolver taxResolver = instanciateTaxResolver(taxCtx);
         Map<UUID, TaxCode> newTaxCodes = addMissingTaxCodes(newInvoice, taxResolver, taxCtx, callCtx);
 
+        // Since we're coming from the bus, we need to log-in manually
+        // TODO The plugin should have its own table instead of relying on custom fields for this
+        killbillAPI.getSecurityApi().login("admin", "password");
+
         for (Entry<UUID, TaxCode> entry : newTaxCodes.entrySet()) {
             UUID invoiceItemId = entry.getKey();
             TaxCode taxCode = entry.getValue();
+            // Need to do it by listening to the event since we cannot add custom fields until the invoice is created
             persistTaxCode(taxCode, invoiceItemId, newInvoice, callCtx);
         }
     }
@@ -806,7 +811,10 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
             TaxCode tax = null;
             Set<TaxCode> taxes = existingTaxCodes.get(item.getId());
             // Note: taxes != null as per the Multimap contract
-            if (!taxes.isEmpty()) {
+            if (taxes.isEmpty()) {
+                // For safety, to avoid adjusting old invoices without tax codes
+                continue;
+            } else {
                 tax = taxes.iterator().next();
             }
 

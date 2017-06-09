@@ -48,7 +48,7 @@ import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.fixtures.InvalidConstructorTaxResolver;
 import org.killbill.billing.plugin.simpletax.util.LazyValue;
 import org.killbill.billing.test.helpers.TaxCodeBuilder;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
