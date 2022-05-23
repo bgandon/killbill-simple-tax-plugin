@@ -51,7 +51,7 @@ public class InvoiceItemBuilder implements Builder<InvoiceItem> {
         String description = type == null ? null : "Test " + type.name();
         UUID linkedItemId = linkedItem == null ? null : linkedItem.get().getId();
         PluginInvoiceItem item = new PluginInvoiceItem(id, type, invoiceId, accountId, null, startDate, endDate, amount, EUR,
-                description, null, null, planName, null, null, linkedItemId, null, null, null);
+                description, null, null, null, null, null, planName, null, null, null, null, linkedItemId, null, null, null, null, null, null);
         if (builtItemHolder != null) {
             builtItemHolder.resolve(item);
         }

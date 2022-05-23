@@ -18,7 +18,6 @@ package org.killbill.billing.plugin.simpletax.config.http;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.killbill.billing.plugin.simpletax.config.http.CustomFieldService.VATIN_CUSTOM_FIELD_NAME;
-import static org.osgi.service.log.LogService.LOG_ERROR;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,11 +30,12 @@ import org.killbill.billing.plugin.simpletax.internal.VATIN;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A controller that serves the end points related to VAT Identification Numbers
@@ -44,7 +44,7 @@ import com.google.common.collect.ImmutableList;
  * @author Benjamin Gandon
  */
 public class VatinController {
-    private OSGIKillbillLogService logService;
+    private static final Logger logger = LoggerFactory.getLogger(VatinController.class);
     private CustomFieldService customFieldService;
 
     /**
@@ -53,12 +53,9 @@ public class VatinController {
      *
      * @param customFieldService
      *            The service to use when accessing custom fields.
-     * @param logService
-     *            The Kill Bill log service to use.
      */
-    public VatinController(CustomFieldService customFieldService, OSGIKillbillLogService logService) {
+    public VatinController(CustomFieldService customFieldService) {
         super();
-        this.logService = logService;
         this.customFieldService = customFieldService;
     }
 
@@ -76,7 +73,7 @@ public class VatinController {
      */
     // TODO: return a List<VATINRsc>
     public Object listVatins(@Nullable UUID accountId, @Nonnull Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(accountId, tenant.getId());
 
         List<CustomField> fields;
         if (accountId == null) {
@@ -115,7 +112,7 @@ public class VatinController {
      */
     // TODO: return a VATINRsc
     public Object getAccountVatin(@Nonnull UUID accountId, @Nonnull Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(accountId, tenant.getId());
 
         CustomField field = customFieldService.findFieldByNameAndAccountAndTenant(VATIN_CUSTOM_FIELD_NAME,
                 accountId, tenantContext);
@@ -142,7 +139,7 @@ public class VatinController {
      *             When {@code vatinRsc} is {@code null}.
      */
     public boolean saveAccountVatin(@Nonnull UUID accountId, @Nonnull VATINRsc vatinRsc, Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(accountId, tenant.getId());
         String newValue = vatinRsc.vatin.getNumber();
         return customFieldService.saveAccountField(newValue, VATIN_CUSTOM_FIELD_NAME, accountId, tenantContext);
     }
@@ -152,7 +149,7 @@ public class VatinController {
         try {
             vatinObj = new VATIN(vatin);
         } catch (IllegalArgumentException exc) {
-            logService.log(LOG_ERROR, "Illegal value of [" + vatin + "] in field '" + VATIN_CUSTOM_FIELD_NAME
+            logger.error("Illegal value of [" + vatin + "] in field '" + VATIN_CUSTOM_FIELD_NAME
                     + "' for account " + accountId, exc);
             return null;
         }

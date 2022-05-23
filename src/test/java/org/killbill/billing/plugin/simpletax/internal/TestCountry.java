@@ -65,7 +65,7 @@ public class TestCountry {
     @Test(groups = "fast")
     public void shouldReturnLocalizedName() {
         // Expect
-        assertEquals(US.computeName(FRENCH), "Etats-Unis");
+        assertEquals(US.computeName(FRENCH), "États-Unis");
         assertEquals(FR.computeName(ENGLISH), "France");
     }
 

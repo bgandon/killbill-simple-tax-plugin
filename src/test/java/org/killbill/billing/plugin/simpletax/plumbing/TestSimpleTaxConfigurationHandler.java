@@ -25,7 +25,6 @@ import java.util.Properties;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.test.helpers.TaxCodeBuilder;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -40,15 +39,13 @@ public class TestSimpleTaxConfigurationHandler {
 
     @Mock
     private OSGIKillbillAPI services;
-    @Mock
-    private OSGIKillbillLogService logService;
 
     private SimpleTaxConfigurationHandler configHandler;
 
     @BeforeClass
     public void init() {
         initMocks(this);
-        configHandler = new SimpleTaxConfigurationHandler("pluginName", services, logService);
+        configHandler = new SimpleTaxConfigurationHandler("pluginName", services);
     }
 
     @Test(groups = "fast")

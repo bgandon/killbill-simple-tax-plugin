@@ -24,7 +24,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.killbill.billing.ObjectType.ACCOUNT;
 import static org.killbill.billing.ObjectType.INVOICE_ITEM;
 import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
-import static org.osgi.service.log.LogService.LOG_ERROR;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,10 +41,11 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.billing.util.entity.Pagination;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A service class that eases manipulating custom fields values.
@@ -53,6 +53,8 @@ import com.google.common.collect.ImmutableList;
  * @author Benjamin Gandon
  */
 public class CustomFieldService {
+    private final Logger logger;
+
     /** Name of custom fields for account VAT Identification Numbers. */
     public static final String VATIN_CUSTOM_FIELD_NAME = "VATIdNum";
     /** Name of custom fields for account tax countries. */
@@ -62,20 +64,21 @@ public class CustomFieldService {
     private static final long PAGE_SIZE = 100L;
 
     private CustomFieldUserApi customFieldApi;
-    private OSGIKillbillLogService logService;
+
+    CustomFieldService(CustomFieldUserApi customFieldApi, Logger logger) {
+        super();
+        this.customFieldApi = customFieldApi;
+        this.logger = logger;
+    }
 
     /**
      * Constructs a service for manipulating custom fields.
      *
      * @param customFieldApi
      *            The Kill Bill service API class to use.
-     * @param logService
-     *            The Kill Bill logging service to use.
      */
-    public CustomFieldService(CustomFieldUserApi customFieldApi, OSGIKillbillLogService logService) {
-        super();
-        this.customFieldApi = customFieldApi;
-        this.logService = logService;
+    public CustomFieldService(CustomFieldUserApi customFieldApi) {
+        this(customFieldApi, LoggerFactory.getLogger(CustomFieldService.class));
     }
 
     /**
@@ -209,14 +212,12 @@ public class CustomFieldService {
                 }
             }
         }
-        CallContext context = new PluginCallContext(PLUGIN_NAME, new DateTime(), tenantContext.getTenantId());
+        CallContext context = new PluginCallContext(PLUGIN_NAME, new DateTime(), tenantContext.getAccountId(), tenantContext.getTenantId());
         if (existing != null) {
             try {
                 customFieldApi.removeCustomFields(ImmutableList.of(existing), context);
             } catch (CustomFieldApiException exc) {
-                logService.log(
-                        LOG_ERROR,
-                        "while removing custom field '" + existing.getFieldName() + "' with value ["
+                logger.error("while removing custom field '" + existing.getFieldName() + "' with value ["
                                 + existing.getFieldValue() + "] on " + existing.getObjectType() + " object ["
                                 + existing.getObjectId() + "]", exc);
                 return false;
@@ -230,14 +231,13 @@ public class CustomFieldService {
             customFieldApi.addCustomFields(ImmutableList.of(newField), context);
             return true;
         } catch (CustomFieldApiException exc) {
-            logService.log(LOG_ERROR, "while adding custom field '" + fieldName + "' with value [" + fieldValue
+            logger.error("while adding custom field '" + fieldName + "' with value [" + fieldValue
                     + "] on " + objectType + " object [" + objectId + "]", exc);
             try {
                 // Add back the removed field
                 customFieldApi.addCustomFields(ImmutableList.of(existing), context);
             } catch (CustomFieldApiException exc2) {
-                logService.log(LOG_ERROR,
-                        "while adding back the previously removed custom field '" + existing.getFieldName()
+                logger.error("while adding back the previously removed custom field '" + existing.getFieldName()
                                 + "' with value [" + existing.getFieldValue() + "] on " + existing.getObjectType()
                                 + " object [" + existing.getObjectId() + "]", exc);
             }

@@ -63,9 +63,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.osgi.service.log.LogService.LOG_DEBUG;
-import static org.osgi.service.log.LogService.LOG_ERROR;
-import static org.osgi.service.log.LogService.LOG_INFO;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -89,7 +86,7 @@ import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.notification.plugin.api.ExtBusEvent;
-import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillClock;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
@@ -115,12 +112,13 @@ import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
 import org.killbill.billing.osgi.libs.killbill.OSGIConfigPropertiesService;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -166,11 +164,11 @@ public class TestSimpleTaxPlugin {
     private OSGIKillbillAPI services;
     private AccountUserApi accountUserApi;
     @Mock
-    private OSGIKillbillLogService logService; // = TestUtils.buildLogService();
-    @Mock
     private OSGIConfigPropertiesService cfgService;
-    private Clock clock = new DefaultClock();
+    @Mock
+    private OSGIKillbillClock clock;
 
+    private Logger logger;
     private SimpleTaxPlugin plugin;
 
     private Account account;
@@ -238,9 +236,10 @@ public class TestSimpleTaxPlugin {
     }
 
     private SimpleTaxPlugin pluginForConfig(Map<String, String> cfg) {
-        SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, services, logService);
-        cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(cfg, logService));
-        return new SimpleTaxPlugin(cfgHandler, customFieldService, services, cfgService, logService, clock);
+        SimpleTaxConfigurationHandler cfgHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, services);
+        logger = Mockito.spy(Logger.class);
+        cfgHandler.setDefaultConfigurable(new SimpleTaxConfig(cfg, logger));
+        return new SimpleTaxPlugin(cfgHandler, customFieldService, services, cfgService, clock, logger);
     }
 
     private void initInvoices(String taxCode) {
@@ -341,7 +340,7 @@ public class TestSimpleTaxPlugin {
                 .thenReturn(staticCatalog);
 
         final ArgumentCaptor<String> planName = forClass(String.class);
-        when(staticCatalog.findCurrentPlan(planName.capture())).then(new Answer<Plan>() {
+        when(staticCatalog.findPlan(planName.capture())).then(new Answer<Plan>() {
             @Override
             public Plan answer(InvocationOnMock invocation) throws Throwable {
                 String planName = (String) invocation.getArguments()[0];
@@ -366,7 +365,7 @@ public class TestSimpleTaxPlugin {
     }
 
     private void withInvoices(Invoice... invoices) throws Exception {
-        when(invoiceUserApi.getInvoicesByAccount(account.getId(), false, context))//
+        when(invoiceUserApi.getInvoicesByAccount(account.getId(), false, false, context))//
                 .thenReturn(asList(invoices));
 
         for (Invoice invoice : invoices) {
@@ -581,7 +580,7 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountWithNullCustomFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(null);
@@ -603,7 +602,7 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountNoCustomFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(ImmutableList.<CustomField> of());
@@ -626,7 +625,7 @@ public class TestSimpleTaxPlugin {
         Invoice invoice = new InvoiceBuilder(accountNonTaxFields)//
                 .withItem(new InvoiceItemBuilder().withType(RECURRING).withAmount(SIX).thenSaveTo(item)).build();
 
-        when(invoiceUserApi.getInvoicesByAccount(accountId, false, context))//
+        when(invoiceUserApi.getInvoicesByAccount(accountId, false, false, context))//
                 .thenReturn(asList(invoice));
         when(customFieldUserApi.getCustomFieldsForAccountType(accountId, INVOICE_ITEM, context))//
                 .thenReturn(asList(new CustomFieldBuilder()//
@@ -671,7 +670,7 @@ public class TestSimpleTaxPlugin {
 
         // Expect
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
-        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+        verify(logger).error( argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InstantiationException.class));
     }
 
@@ -684,7 +683,7 @@ public class TestSimpleTaxPlugin {
 
         // Expect
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
-        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+        verify(logger).error(argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(InvocationTargetException.class));
     }
 
@@ -697,7 +696,7 @@ public class TestSimpleTaxPlugin {
 
         // Expect
         assertEquals(plugin.getAdditionalInvoiceItems(invoiceE, false, properties, context).size(), 0);
-        verify(logService).log(eq(LOG_ERROR), argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
+        verify(logger).error( argThat(containsStringIgnoringCase("cannot instanciate tax resolver")),
                 isA(ExceptionInInitializerError.class));
     }
 
@@ -715,7 +714,7 @@ public class TestSimpleTaxPlugin {
 
         // Then
         assertEquals(items.size(), 0);
-        verifyNoMoreInteractions(logService);
+        verifyNoMoreInteractions(logger);
     }
 
     @Test(groups = "fast")
@@ -742,13 +741,13 @@ public class TestSimpleTaxPlugin {
         assertNotNull(exc.getCause());
         assertEquals(exc.getCause().getClass(), CustomFieldApiException.class);
 
-        verify(logService).log(eq(LOG_DEBUG), anyString());
-        verify(logService).log(eq(LOG_INFO), anyString());
+        verify(logger).debug(anyString());
+        verify(logger).info(anyString());
 
-        verify(logService).log(eq(LOG_ERROR),
+        verify(logger).error(
                 argThat(allOf(containsStringIgnoringCase("cannot add custom field"), containsString(VAT_20_0))),
                 any(CustomFieldApiException.class));
-        verifyNoMoreInteractions(logService);
+        verifyNoMoreInteractions(logger);
     }
 
     @Test(groups = "fast")
@@ -853,7 +852,7 @@ public class TestSimpleTaxPlugin {
         assertEquals(items.size(), 0);
 
         verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
-        verifyZeroInteractions(logService);
+        verifyZeroInteractions(logger);
     }
 
     @Test(groups = "fast")
@@ -884,8 +883,8 @@ public class TestSimpleTaxPlugin {
 
         verify(customFieldUserApi, never()).addCustomFields(anyListOf(CustomField.class), eq(context));
         String accountIdString = account.getId().toString();
-        verify(logService)
-                .log(eq(LOG_ERROR),
+        verify(logger)
+                .error(
                         argThat(allOf(containsString("ZZ-boom!"), containsString("taxCountry"),
                                 containsString(accountIdString))), any(IllegalArgumentException.class));
     }

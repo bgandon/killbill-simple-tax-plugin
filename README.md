@@ -32,6 +32,14 @@ change once in a while.
 Quick start
 -----------
 
+Installation:
+
+```
+kpm install_java_plugin simple-tax --from-source-file target/simple-tax-plugin-*-SNAPSHOT.jar --destination /var/tmp/bundles
+```
+
+Configuration:
+
 1. Configure the plugin as described below (make sure your products have the right tax codes)
 2. Configure the tax country of each account using the private PUT endpoint `/plugins/killbill-simple-tax/accounts/<ACCOUNT_ID>/taxCountry`. Note: the country on the account will not be used for taxation
 

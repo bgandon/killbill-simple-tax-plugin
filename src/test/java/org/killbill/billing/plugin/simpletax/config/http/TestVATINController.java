@@ -38,7 +38,6 @@ import org.killbill.billing.plugin.simpletax.internal.VATIN;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.util.callcontext.TenantContext;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
@@ -55,8 +54,6 @@ public class TestVATINController {
     private static final VATIN FR_TEST7 = new VATIN(FR_TEST7_NUM);
 
     @Mock
-    private OSGIKillbillLogService logService;
-    @Mock
     private CustomFieldService customFieldService;
 
     @InjectMocks
@@ -70,7 +67,7 @@ public class TestVATINController {
     public void setup() {
         initMocks(this);
         when(tenant.getId()).thenReturn(randomUUID());
-        tenantContext = new PluginTenantContext(tenant.getId());
+        tenantContext = new PluginTenantContext(randomUUID(), tenant.getId());
     }
 
     @Test(groups = "fast")
@@ -104,9 +101,9 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldListVATINs() throws Exception {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         CustomFieldBuilder builder = new CustomFieldBuilder().withObjectId(accountId);
-        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant(eq("VATIdNum"), eq(tenantContext)))//
+        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant(eq("VATIdNum"), any(TenantContext.class)))//
                 .thenReturn(newArrayList(//
                         builder.withFieldName("VATIdNum").withFieldValue(FR_TEST6_NUM).build(),//
                         builder.withFieldName("VATIdNum").withFieldValue(FR_TEST7_NUM).build()));
@@ -149,7 +146,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldListVATINOfAccount() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -174,7 +171,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldNotListInvalidVATINOfAccount() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -195,7 +192,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldGetTaxCountry() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -217,7 +214,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldGetNoTaxCountry() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(null);
 
@@ -228,7 +225,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldGetNoTaxCountryWhenInvalid() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("VATIdNum", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -249,7 +246,7 @@ public class TestVATINController {
     @Test(groups = "fast")
     public void shouldSaveVATIN() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         VATINRsc vatin = new VATINRsc(accountId, FR_TEST6);
 
         // When

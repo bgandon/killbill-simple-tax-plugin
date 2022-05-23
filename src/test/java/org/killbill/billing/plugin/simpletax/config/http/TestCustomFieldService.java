@@ -41,7 +41,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.osgi.service.log.LogService.LOG_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -59,14 +58,10 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
 import org.killbill.billing.util.entity.Pagination;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -82,11 +77,6 @@ public class TestCustomFieldService {
 
     @Mock
     private CustomFieldUserApi customFieldApi;
-    @Mock
-    private OSGIKillbillLogService logService;
-
-    @InjectMocks
-    private CustomFieldService service;
 
     @Captor
     private ArgumentCaptor<List<CustomField>> addedFields;
@@ -132,6 +122,10 @@ public class TestCustomFieldService {
 
     @Test(groups = "fast", expectedExceptions = NullPointerException.class)
     public void shouldNotAcceptFindingFieldsWithNullName() {
+        CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
+
         // Expect exception
         service.findAllAccountFieldsByFieldNameAndTenant(null, defaultTenant);
     }
@@ -141,6 +135,8 @@ public class TestCustomFieldService {
         // Given
         TenantContext tenant = mock(TenantContext.class);
         withThreePagesOfSearchResults(tenant);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         // When
         List<CustomField> fields = service.findAllAccountFieldsByFieldNameAndTenant("toto", tenant);
@@ -171,6 +167,9 @@ public class TestCustomFieldService {
 
     @Test(groups = "fast", expectedExceptions = NullPointerException.class)
     public void shouldNotAcceptFindingSingleFieldWithNullName() {
+        CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         // Expect exception
         service.findFieldByNameAndAccountAndTenant(null, randomUUID(), defaultTenant);
@@ -181,6 +180,9 @@ public class TestCustomFieldService {
         // Given
         TenantContext tenant = mock(TenantContext.class);
         withAccountFields(null, tenant);
+        CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         // Expect
         assertNull(service.findFieldByNameAndAccountAndTenant("plop", randomUUID(), tenant));
@@ -208,6 +210,8 @@ public class TestCustomFieldService {
                                         "uh oh.. duplicate fields are illegal"
                                                 + " but we should return the first match anyway")//
                                 .build()), tenant);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         // When
         CustomField field = service.findFieldByNameAndAccountAndTenant("plop", randomUUID(), tenant);
@@ -223,6 +227,9 @@ public class TestCustomFieldService {
     public void shouldSaveFieldWhenNoneAlreadyExists() throws Exception {
         // Given
         UUID accountId = randomUUID();
+        CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         // When
         boolean ok = service.saveAccountField("titi", "toto", accountId, defaultTenant);
@@ -240,14 +247,15 @@ public class TestCustomFieldService {
         assertEquals(addedField.getFieldName(), "toto");
         assertEquals(addedField.getFieldValue(), "titi");
 
-        verifyZeroInteractions(logService);
+        verifyZeroInteractions(logger);
     }
 
     @Test(groups = "fast")
     public void shouldSaveFieldWhenNoneExistsWithoutCloberingAnyOther() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         when(customFieldApi.getCustomFieldsForObject(any(UUID.class), any(ObjectType.class), any(TenantContext.class)))//
                 .thenReturn(newArrayList(new CustomFieldBuilder()//
@@ -269,15 +277,15 @@ public class TestCustomFieldService {
         assertNotNull(addedFields.getValue());
         assertEquals(addedFields.getValue().size(), 1);
 
-        verifyZeroInteractions(logService);
+        verifyZeroInteractions(logger);
     }
 
     @Test(groups = "fast")
     public void shouldModifyExistingField() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        OSGIKillbillLogService logService = mock(OSGIKillbillLogService.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         UUID accountId = randomUUID();
         when(customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, defaultTenant))//
@@ -314,14 +322,15 @@ public class TestCustomFieldService {
         assertEquals(addedField.getFieldName(), "toto");
         assertEquals(addedField.getFieldValue(), "titi");
 
-        verifyZeroInteractions(logService);
+        verifyZeroInteractions(logger);
     }
 
     @Test(groups = "fast")
     public void shouldSurviveNullListOfExistingFields() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         UUID accountId = randomUUID();
         when(customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, defaultTenant))//
@@ -335,15 +344,15 @@ public class TestCustomFieldService {
         verify(customFieldApi).addCustomFields(addedFields.capture(), any(CallContext.class));
         assertEquals(addedFields.getValue().size(), 1);
 
-        verifyZeroInteractions(logService);
+        verifyZeroInteractions(logger);
     }
 
     @Test(groups = "fast")
     public void shouldSurviveExceptionWhenRemovingField() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        OSGIKillbillLogService logService = mock(OSGIKillbillLogService.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         UUID accountId = randomUUID();
         when(customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, defaultTenant))//
@@ -362,8 +371,7 @@ public class TestCustomFieldService {
 
         // Then
         assertFalse(ok);
-        verify(logService).log(eq(LOG_ERROR),//
-                argThat(allOf(containsString("toto"),//
+        verify(logger).error(argThat(allOf(containsString("toto"),//
                         containsString("tata"),//
                         containsString(accountId.toString()))),//
                 any(CustomFieldApiException.class));
@@ -373,8 +381,8 @@ public class TestCustomFieldService {
     public void shouldSurviveExceptionWhenAddingField() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        OSGIKillbillLogService logService = mock(OSGIKillbillLogService.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         UUID accountId = randomUUID();
         when(customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, defaultTenant))//
@@ -425,8 +433,7 @@ public class TestCustomFieldService {
         assertEquals(addedField.getFieldName(), "toto");
         assertEquals(addedField.getFieldValue(), "tata");
 
-        verify(logService).log(eq(LOG_ERROR),//
-                argThat(allOf(containsString("toto"),//
+        verify(logger).error(argThat(allOf(containsString("toto"),//
                         containsString("titi"),//
                         containsString(accountId.toString()))),//
                 any(CustomFieldApiException.class));
@@ -436,8 +443,8 @@ public class TestCustomFieldService {
     public void shouldSurviveExceptionsWhenAddingField() throws Exception {
         // Given
         CustomFieldUserApi customFieldApi = mock(CustomFieldUserApi.class);
-        OSGIKillbillLogService logService = mock(OSGIKillbillLogService.class);
-        CustomFieldService service = new CustomFieldService(customFieldApi, logService);
+        final Logger logger = Mockito.spy(Logger.class);
+        CustomFieldService service = new CustomFieldService(customFieldApi, logger);
 
         UUID accountId = randomUUID();
         when(customFieldApi.getCustomFieldsForObject(accountId, ACCOUNT, defaultTenant))//
@@ -479,7 +486,7 @@ public class TestCustomFieldService {
         assertEquals(addedField.getFieldValue(), "tata");
 
         ArgumentCaptor<String> errMsg = ArgumentCaptor.forClass(String.class);
-        verify(logService, times(2)).log(eq(LOG_ERROR),//
+        verify(logger, times(2)).error(//
                 errMsg.capture(),//
                 any(CustomFieldApiException.class));
         String errMsg1 = errMsg.getAllValues().get(0);

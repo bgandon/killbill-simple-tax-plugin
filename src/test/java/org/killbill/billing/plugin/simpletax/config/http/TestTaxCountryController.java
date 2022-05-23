@@ -38,7 +38,6 @@ import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.test.helpers.CustomFieldBuilder;
 import org.killbill.billing.util.callcontext.TenantContext;
-import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
@@ -53,8 +52,6 @@ public class TestTaxCountryController {
     private static final Country FR = new Country("FR");
 
     @Mock
-    private OSGIKillbillLogService logService;
-    @Mock
     private CustomFieldService customFieldService;
 
     @InjectMocks
@@ -68,7 +65,7 @@ public class TestTaxCountryController {
     public void setup() {
         initMocks(this);
         when(tenant.getId()).thenReturn(randomUUID());
-        tenantContext = new PluginTenantContext(tenant.getId());
+        tenantContext = new PluginTenantContext(randomUUID(), tenant.getId());
     }
 
     @Test(groups = "fast")
@@ -102,9 +99,9 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldListTaxCountries() throws Exception {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         CustomFieldBuilder builder = new CustomFieldBuilder().withObjectId(accountId);
-        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant("taxCountry", tenantContext))//
+        when(customFieldService.findAllAccountFieldsByFieldNameAndTenant(eq("taxCountry"), any(TenantContext.class)))//
                 .thenReturn(newArrayList(//
                         builder.withFieldName("taxCountry").withFieldValue("FR").build(),//
                         builder.withFieldName("taxCountry").withFieldValue("US").build()));
@@ -147,7 +144,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldListTaxCountryOfAccount() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -172,7 +169,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldNotListInvalidTaxCountryOfAccount() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -193,7 +190,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldGetTaxCountry() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -215,7 +212,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldGetNoTaxCountry() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(null);
 
@@ -226,7 +223,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldGetNoTaxCountryWhenInvalid() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         when(customFieldService.findFieldByNameAndAccountAndTenant("taxCountry", accountId, tenantContext))//
                 .thenReturn(new CustomFieldBuilder()//
                         .withObjectId(accountId)//
@@ -247,7 +244,7 @@ public class TestTaxCountryController {
     @Test(groups = "fast")
     public void shouldSaveTaxCountry() {
         // Given
-        UUID accountId = randomUUID();
+        UUID accountId = tenantContext.getAccountId();
         TaxCountryRsc taxCountry = new TaxCountryRsc(accountId, FR);
 
         // When
