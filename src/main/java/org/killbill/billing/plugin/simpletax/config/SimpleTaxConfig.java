@@ -16,32 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax.config;
 
-import static com.google.common.collect.Sets.newLinkedHashSet;
-import static java.lang.Thread.currentThread;
-import static org.apache.commons.lang3.StringUtils.INDEX_NOT_FOUND;
-import static org.apache.commons.lang3.StringUtils.indexOf;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.startsWith;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.bigDecimal;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.country;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.integer;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.localDate;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.resolverConstructor;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.string;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.timeZone;
-import static org.osgi.service.log.LogService.LOG_ERROR;
-import static org.osgi.service.log.LogService.LOG_WARNING;
-
-import java.lang.reflect.Constructor;
-import java.math.BigDecimal;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.plugin.simpletax.TaxComputationContext;
@@ -49,10 +25,22 @@ import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import static com.google.common.collect.Sets.newLinkedHashSet;
+import static java.lang.Thread.currentThread;
+import static org.apache.commons.lang3.StringUtils.*;
+import static org.jooq.tools.StringUtils.isBlank;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.*;
 
 /**
  * A configuration accessor for the simple-tax plugin.
@@ -157,13 +145,13 @@ public class SimpleTaxConfig {
     }
 
     private Map<String, String> cfg;
-    private OSGIKillbillLogService logService;
 
     private Map<String, TaxCode> taxCodesByName;
 
     private DateTimeZone taxationTimeZone;
     private int taxAmountPrecision;
     private Constructor<? extends TaxResolver> taxResolverConstructor;
+    private static final Logger logger = LoggerFactory.getLogger(SimpleTaxConfig.class);
 
     /**
      * Construct a new configuration accessor for the given configuration
@@ -173,15 +161,11 @@ public class SimpleTaxConfig {
      *            The configuration properties to use. No {@code null} values
      *            are allowed, which should be the case when this Map is
      *            constructed out of a {@link java.util.Properties} instance.
-     * @param logService
-     *            The logging service to use.
      * @throws NullPointerException
      *             when any value in {@code cfg} is {@code null}.
      */
-    public SimpleTaxConfig(Map<String, String> cfg, OSGIKillbillLogService logService) {
+    public SimpleTaxConfig(Map<String, String> cfg) {
         this.cfg = cfg;
-        this.logService = logService;
-
         parseConfig();
         earlyConsistencyChecks();
     }
@@ -204,27 +188,28 @@ public class SimpleTaxConfig {
     private void earlyConsistencyChecks() {
         String resolverClassName = cfg.get(TAX_RESOLVER_PROPERTY);
         if (isBlank(resolverClassName)) {
-            logService.log(LOG_WARNING, "Blank property [" + TAX_RESOLVER_PROPERTY
+            logger.info("Blank property [" + TAX_RESOLVER_PROPERTY
                     + "], whereas it should not be blank." + DEFAULT_TAXATION_MSG);
         } else {
             Class<?> clazz = null;
             try {
-                clazz = currentThread().getContextClassLoader().loadClass(resolverClassName);
+                clazz = getClass().getClassLoader().loadClass(resolverClassName);
+                //clazz = currentThread().getContextClassLoader().loadClass(resolverClassName);
             } catch (ClassNotFoundException exc) {
-                logService.log(LOG_ERROR, "Cannot load class [" + resolverClassName + "] as specified by the ["
+                logger.info("Cannot load class [" + resolverClassName + "] as specified by the ["
                         + TAX_RESOLVER_PROPERTY + "] configuration property." + DEFAULT_TAXATION_MSG);
             }
             if (clazz != null) {
                 String invalidClassMsgPfx = "Invalid class [" + resolverClassName + "] specified by the ["
                         + TAX_RESOLVER_PROPERTY + "] configuration property,";
                 if (!TaxResolver.class.isAssignableFrom(clazz)) {
-                    logService.log(LOG_ERROR, invalidClassMsgPfx + " which must designate a sub-class of ["
+                    logger.info(invalidClassMsgPfx + " which must designate a sub-class of ["
                             + TaxResolver.class.getName() + "]." + DEFAULT_TAXATION_MSG);
                 }
                 try {
                     clazz.getConstructor(TaxComputationContext.class);
                 } catch (NoSuchMethodException exc) {
-                    logService.log(LOG_ERROR, invalidClassMsgPfx
+                    logger.info(invalidClassMsgPfx
                             + " which must define a public constructor accepting a single argument of ["
                             + TaxComputationContext.class.getName() + "]." + DEFAULT_TAXATION_MSG);
                 }
@@ -241,7 +226,7 @@ public class SimpleTaxConfig {
             // requirement we detail in the constructor javadoc.
             for (String taxCode : splitTaxCodes(taxCodes)) {
                 if (findTaxCode(taxCode) == null) {
-                    logService.log(LOG_ERROR, "Inconsistent config property [" + propName + "] with value [" + taxCodes
+                    logger.info("Inconsistent config property [" + propName + "] with value [" + taxCodes
                             + "], because the tax code [" + taxCode + "] is not defined anywhere."
                             + " Config spelling error? You should fix this!");
                 }
@@ -276,6 +261,9 @@ public class SimpleTaxConfig {
             LocalDate startingOn = localDate(cfg, prefix + STARTING_ON_SUFFIX, null);
             LocalDate stoppingOn = localDate(cfg, prefix + STOPPING_ON_SUFFIX, null);
             Country country = country(cfg, prefix + COUNTRY_SUFFIX, null);
+
+            logger.info("Found configuration of tax code [" + name + "] applied to country '" + country + 
+                "' starting on: " + startingOn);
             codes.put(name, new TaxCode(name, taxItemDescription, rate, startingOn, stoppingOn, country));
         }
         return codes.build();
@@ -399,7 +387,7 @@ public class SimpleTaxConfig {
         for (String name : splitTaxCodes(names)) {
             TaxCode taxCode = findTaxCode(name);
             if (taxCode == null) {
-                logService.log(LOG_ERROR, String.format(errMsgFmt, name));
+                logger.info(String.format(errMsgFmt, name));
                 continue;
             }
             taxCodes.add(taxCode);

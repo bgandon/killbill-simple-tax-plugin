@@ -16,17 +16,15 @@
  */
 package org.killbill.billing.plugin.simpletax.util;
 
-import static java.math.BigDecimal.ZERO;
-
-import java.math.BigDecimal;
-import java.util.UUID;
+import com.google.common.collect.Multimap;
+import org.killbill.billing.invoice.api.InvoiceItem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
+import java.util.UUID;
 
-import org.killbill.billing.invoice.api.InvoiceItem;
-
-import com.google.common.collect.Multimap;
+import static java.math.BigDecimal.ZERO;
 
 /**
  * Helper utility methods that perform computations on invoices.

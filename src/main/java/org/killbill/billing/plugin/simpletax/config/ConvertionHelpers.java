@@ -16,24 +16,7 @@
  */
 package org.killbill.billing.plugin.simpletax.config;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.primitives.Ints.tryParse;
-import static java.lang.Thread.currentThread;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.split;
-import static org.apache.commons.lang3.StringUtils.trim;
-import static org.joda.time.format.ISODateTimeFormat.localDateParser;
-
-import java.lang.reflect.Constructor;
-import java.math.BigDecimal;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -44,7 +27,20 @@ import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 import org.killbill.billing.plugin.simpletax.resolving.TaxResolver;
 
-import com.google.common.collect.ImmutableSet;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.primitives.Ints.tryParse;
+import static java.lang.Thread.currentThread;
+import static org.apache.commons.lang3.StringUtils.*;
+import static org.joda.time.format.ISODateTimeFormat.localDateParser;
 
 /**
  * Utility methods that:

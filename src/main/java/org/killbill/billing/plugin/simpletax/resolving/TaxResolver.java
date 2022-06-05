@@ -16,10 +16,10 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving;
 
-import javax.annotation.Nullable;
-
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
+
+import javax.annotation.Nullable;
 
 /**
  * Tax resolvers are meant to apply regulation specific rules when determining

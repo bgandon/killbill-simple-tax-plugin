@@ -16,15 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
-import static org.apache.commons.collections4.map.LazyMap.lazyMap;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import javax.annotation.Nonnull;
-
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 import org.apache.commons.collections4.Transformer;
 import org.killbill.billing.catalog.api.CatalogApiException;
 import org.killbill.billing.catalog.api.Plan;
@@ -36,8 +29,13 @@ import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.util.CheckedSupplier;
 import org.killbill.billing.util.customfield.CustomField;
 
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
+import javax.annotation.Nonnull;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.apache.commons.collections4.map.LazyMap.lazyMap;
 
 /**
  * @author Benjamin Gandon
@@ -99,7 +97,7 @@ public class TaxCodeService {
                     @Override
                     public Product transform(String planName) {
                         try {
-                            Plan plan = catalog.get().findCurrentPlan(planName);
+                            Plan plan = catalog.get().findPlan(planName); //findCurrentPlan(planName);
                             return plan.getProduct();
                         } catch (CatalogApiException notFound) {
                             return null;

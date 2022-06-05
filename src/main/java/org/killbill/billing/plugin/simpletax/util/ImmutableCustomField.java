@@ -16,14 +16,14 @@
  */
 package org.killbill.billing.plugin.simpletax.util;
 
-import static java.util.UUID.randomUUID;
-import static org.joda.time.DateTime.now;
-
-import java.util.UUID;
-
 import org.joda.time.DateTime;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.util.customfield.CustomField;
+
+import java.util.UUID;
+
+import static java.util.UUID.randomUUID;
+import static org.joda.time.DateTime.now;
 
 /**
  * An immutable implementation of the {@link CustomField} interface, along with

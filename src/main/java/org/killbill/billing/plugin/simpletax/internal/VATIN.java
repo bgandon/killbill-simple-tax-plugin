@@ -16,15 +16,14 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
 
 /**
  * An immutable holder for type-safe manipulation of <a
