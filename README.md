@@ -16,6 +16,26 @@
 Kill Bill Simple Tax Plugin [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/killbill-simple-tax-plugin/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
 ===========================
 
+Quick Intro
+-----------
+
+This is update to original `killbill-simple-tax` for Killbill v.0.22.x
+
+Version | Killbill | Branch
+------|---------|------------------
+1.0.0 | v0.18.x | main
+1.1.0 | v0.22.x | v0.22.x
+
+Installation:
+1. Package the code with `mvn clean package`
+2. Install the packaged jarfile. This package has been tested using installation thru Kaui
+
+Current issue:
+- Plugin adjusts past invoices having tax codes by deducting the amount taxxed, and newly-generated invoice now having the adjusted amount from past invoice. The current workaround involves comments out the logic that process past invoices
+- Albeit the plugin works normally on current state of code, the log catches `org.apache.shiroz.authz.UnauthenticatedException` on `SimpleTaxPlugin` class. This issue is currently being inspected
+
+---
+
 This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements
 tax codes with fixed tax rates and cut-off dates. Tax codes can be associated
 to products of the Kill Bill catalog, or specifically set on invoice items.
