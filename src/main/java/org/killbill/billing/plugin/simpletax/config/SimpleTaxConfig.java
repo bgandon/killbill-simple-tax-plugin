@@ -32,12 +32,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newLinkedHashSet;
-import static java.lang.Thread.currentThread;
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.jooq.tools.StringUtils.isBlank;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.*;
@@ -393,5 +393,17 @@ public class SimpleTaxConfig {
             taxCodes.add(taxCode);
         }
         return taxCodes.build();
+    }
+
+    /**
+     * Retrieve credentials for simpletax authorization
+     * 
+     * @return Map of credentials (contains 'username' & 'password')
+     */
+    public Map<String, String> getCredentials(){
+        return new HashMap<String, String>() {{
+            put("username", cfg.get(PROPERTY_PREFIX + "credentials.username"));
+            put("password", cfg.get(PROPERTY_PREFIX + "credentials.password"));
+        }};
     }
 }

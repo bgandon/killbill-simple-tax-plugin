@@ -192,21 +192,16 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
        Map<UUID, TaxCode> newTaxCodes = addMissingTaxCodes(newInvoice, taxResolver, taxCtx, callCtx);
 
        ImmutableList.Builder<InvoiceItem> additionalItems = ImmutableList.builder();
-       List<InvoiceItem> newItems = computeTaxOrAdjustmentItemsForNewInvoice(newInvoice, taxCtx, newTaxCodes);
-       logger.info("TRACE: Adding [" + newItems.size() + "] new item(s) to invoice [" + newInvoice.getId() + "]");
-       additionalItems.addAll(newItems);
-//       for (Invoice invoice : taxCtx.getAllInvoices()) {
-//
-//           List<InvoiceItem> newItems;
-//           if (invoice.equals(newInvoice)) {
-//               newItems = computeTaxOrAdjustmentItemsForNewInvoice(invoice, taxCtx, newTaxCodes);
-//           } else {
-//               newItems = computeTaxOrAdjustmentItemsForHistoricalInvoice(invoice, taxCtx);
-//           }
-//
-//           logger.info("TRACE: Adding [" + newItems.size() + "] new item(s) to invoice [" + newInvoice.getId() + "]");
-//           additionalItems.addAll(newItems);
-//       }
+       for (Invoice invoice : taxCtx.getAllInvoices()) {
+
+           List<InvoiceItem> newItems;
+           if (invoice.equals(newInvoice)) {
+               newItems = computeTaxOrAdjustmentItemsForNewInvoice(invoice, taxCtx, newTaxCodes);
+           } else {
+               newItems = computeTaxOrAdjustmentItemsForHistoricalInvoice(invoice, taxCtx);
+           }
+           additionalItems.addAll(newItems);
+       }
        return additionalItems.build();
    }
 
@@ -538,7 +533,12 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
                 .withObjectType(INVOICE_ITEM)//
                 .withObjectId(invoiceItemId);
         CustomField field = taxCodesField.build();
+        SimpleTaxConfig config = configHandler.getConfigurable(callCtx.getTenantId());
         try {
+            // added for UnauthenticatedException
+            killbillAPI.getSecurityApi().login(
+                config.getCredentials().get("username"), 
+                config.getCredentials().get("password"));
             customFieldsService.addCustomFields(newArrayList(field), callCtx);
         } catch (CustomFieldApiException exc) {
             logger.error(
@@ -557,6 +557,9 @@ public class SimpleTaxPlugin extends PluginInvoicePluginApi implements OSGIKillb
                     "Cannot add custom field [" + field.getFieldName() + "] with value [" + field.getFieldValue()
                             + "] to *non-existing* invoice item [" + invoiceItemId + "] of invoice ["
                             + newInvoice.getId() + "] for tenant [" + callCtx.getTenantId() + "]", exc);
+        } finally {
+            // logs out
+            killbillAPI.getSecurityApi().logout();
         }
     }
 

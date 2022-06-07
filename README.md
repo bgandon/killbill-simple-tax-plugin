@@ -19,20 +19,12 @@ Kill Bill Simple Tax Plugin [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon
 Quick Intro
 -----------
 
-This is update to original `killbill-simple-tax` for Killbill v.0.22.x
+This is update version to original `killbill-simple-tax` for Killbill v0.22.x
 
 Version | Killbill | Branch
 ------|---------|------------------
 1.0.0 | v0.18.x | main
 1.1.0 | v0.22.x | v0.22.x
-
-Installation:
-1. Package the code with `mvn clean package`
-2. Install the packaged jarfile. This package has been tested using installation thru Kaui
-
-Current issue:
-- Plugin adjusts past invoices having tax codes by deducting the amount taxxed, and newly-generated invoice now having the adjusted amount from past invoice. The current workaround involves comments out the logic that process past invoices
-- Albeit the plugin works normally on current state of code, the log catches `org.apache.shiroz.authz.UnauthenticatedException` on `SimpleTaxPlugin` class. This issue is currently being inspected
 
 ---
 
@@ -178,10 +170,16 @@ org.killbill.billing.plugin.simpletax.products.Sport =         VAT_FR_std_2000_1
 org.killbill.billing.plugin.simpletax.products.Super =         VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.OilSlick =      VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%' \
+org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+
+# Credentials
+org.killbill.billing.plugin.simpletax.credentials.username = <YOUR CREDENTIALS USERNAME>
+org.killbill.billing.plugin.simpletax.credentials.password = <YOUR CREDENTIALS PASSWORD>' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
+### **Update on v1.1.0:**
 
+The credential properties are required for custom fields manipulation. You can supply Killbill's default credentials, but it's recommended to use [custom credentials](https://docs.killbill.io/latest/user_management.html) designed for this plugin.
 
 ### Configuring accounts
 
