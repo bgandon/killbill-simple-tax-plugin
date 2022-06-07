@@ -16,10 +16,7 @@
  */
 package org.killbill.billing.plugin.simpletax.resolving;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.collect.Iterables.tryFind;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.convertTimeZone;
-
+import com.google.common.base.Predicate;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.account.api.Account;
@@ -28,7 +25,9 @@ import org.killbill.billing.plugin.simpletax.TaxComputationContext;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.internal.TaxCode;
 
-import com.google.common.base.Predicate;
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.collect.Iterables.tryFind;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.convertTimeZone;
 
 /**
  * A {@link TaxResolver} that applies French rules to determine the taxation

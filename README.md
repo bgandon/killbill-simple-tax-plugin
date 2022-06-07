@@ -16,6 +16,18 @@
 Kill Bill Simple Tax Plugin [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/killbill-simple-tax-plugin/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
 ===========================
 
+Quick Intro
+-----------
+
+This is update version to original `killbill-simple-tax` for Killbill v0.22.x
+
+Version | Killbill | Branch
+------|---------|------------------
+1.0.0 | v0.18.x | main
+1.1.0 | v0.22.x | v0.22.x
+
+---
+
 This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements
 tax codes with fixed tax rates and cut-off dates. Tax codes can be associated
 to products of the Kill Bill catalog, or specifically set on invoice items.
@@ -158,10 +170,16 @@ org.killbill.billing.plugin.simpletax.products.Sport =         VAT_FR_std_2000_1
 org.killbill.billing.plugin.simpletax.products.Super =         VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.OilSlick =      VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
 org.killbill.billing.plugin.simpletax.products.RemoteControl = VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
-org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%' \
+org.killbill.billing.plugin.simpletax.products.Gas =           VAT_FR_std_2000_19_6%, VAT_FR_std_2014_20_0%
+
+# Credentials
+org.killbill.billing.plugin.simpletax.credentials.username = <YOUR CREDENTIALS USERNAME>
+org.killbill.billing.plugin.simpletax.credentials.password = <YOUR CREDENTIALS PASSWORD>' \
      http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/killbill-simple-tax
 ```
+### **Update on v1.1.0:**
 
+The credential properties are required for custom fields manipulation. You can supply Killbill's default credentials, but it's recommended to use [custom credentials](https://docs.killbill.io/latest/user_management.html) designed for this plugin.
 
 ### Configuring accounts
 

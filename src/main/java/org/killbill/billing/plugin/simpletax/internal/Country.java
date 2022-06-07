@@ -16,22 +16,21 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Locale.getISOCountries;
-import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
-
-import java.util.Locale;
-import java.util.Set;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.killbill.billing.plugin.simpletax.util.ConcurrentLazyValue;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableSet;
+import java.util.Locale;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Locale.getISOCountries;
+import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
 
 /**
  * An immutable country, based on ISO 3166-1 alpha-2 standard. This class helps

@@ -16,23 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax.config.http;
 
-import static java.util.regex.Pattern.compile;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.UUID_LOOSE_PATTERN;
-import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
-import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
-
-import java.io.IOException;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.killbill.billing.plugin.core.PluginServlet;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPOSTRsc;
 import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController.TaxCodesPUTRsc;
@@ -40,8 +25,21 @@ import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController.Ta
 import org.killbill.billing.plugin.simpletax.config.http.VatinController.VATINRsc;
 import org.killbill.billing.tenant.api.Tenant;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.util.regex.Pattern.compile;
+import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.UUID_LOOSE_PATTERN;
+import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.toUUIDOrNull;
+import static org.killbill.billing.plugin.simpletax.plumbing.SimpleTaxActivator.PLUGIN_NAME;
 
 /**
  * A {@link PluginServlet} that provides endpoints to setup and review the

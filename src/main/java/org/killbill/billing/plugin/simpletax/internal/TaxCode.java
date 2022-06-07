@@ -16,14 +16,14 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
-import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
-
-import java.math.BigDecimal;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.joda.time.LocalDate;
+
+import java.math.BigDecimal;
+
+import static org.killbill.billing.plugin.simpletax.util.ShortToStringStyle.SHORT_STYLE;
 
 /**
  * Immutable holder class for tax codes definitions.

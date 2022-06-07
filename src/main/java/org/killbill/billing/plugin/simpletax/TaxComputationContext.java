@@ -16,9 +16,8 @@
  */
 package org.killbill.billing.plugin.simpletax;
 
-import java.math.BigDecimal;
-import java.util.Set;
-
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
@@ -26,8 +25,8 @@ import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
 import org.killbill.billing.plugin.simpletax.internal.Country;
 import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Ordering;
+import java.math.BigDecimal;
+import java.util.Set;
 
 /**
  * An immutable holder class that is to contain pre-computed data that are

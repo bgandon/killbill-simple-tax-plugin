@@ -16,15 +16,17 @@
  */
 package org.killbill.billing.plugin.simpletax.plumbing;
 
-import java.util.Map;
-import java.util.Properties;
-
+import com.google.common.collect.Maps;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
 import org.killbill.billing.plugin.api.notification.PluginTenantConfigurableConfigurationHandler;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillAPI;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * A per-tenant configuration handler for the simple-tax plugin.
@@ -33,8 +35,7 @@ import com.google.common.collect.Maps;
  */
 public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfigurationHandler<SimpleTaxConfig> {
 
-    private OSGIKillbillLogService logService;
-
+    private static final Logger logger = LoggerFactory.getLogger(SimpleTaxConfigurationHandler.class);
     /**
      * Constructs a new configuration handler.
      *
@@ -43,17 +44,15 @@ public class SimpleTaxConfigurationHandler extends PluginTenantConfigurableConfi
      *            configuration.
      * @param services
      *            The Kill Bill meta-API.
-     * @param logService
-     *            The service to use when logging events.
      */
-    public SimpleTaxConfigurationHandler(String pluginName, OSGIKillbillAPI services, OSGIKillbillLogService logService) {
-        super(pluginName, services, logService);
-        this.logService = logService;
+    public SimpleTaxConfigurationHandler(String pluginName, OSGIKillbillAPI services) {
+        super(pluginName, services);
     }
 
     @Override
     protected SimpleTaxConfig createConfigurable(Properties pluginConfig) {
+        logger.info("New properties submitted: {}", pluginConfig);
         Map<String, String> props = Maps.fromProperties(pluginConfig);
-        return new SimpleTaxConfig(props, logService);
+        return new SimpleTaxConfig(props);
     }
 }

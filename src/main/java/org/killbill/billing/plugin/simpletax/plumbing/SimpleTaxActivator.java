@@ -16,29 +16,24 @@
  */
 package org.killbill.billing.plugin.simpletax.plumbing;
 
-import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
-
-import java.util.Hashtable;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
+import org.killbill.billing.osgi.libs.killbill.KillbillActivatorBase;
+import org.killbill.billing.osgi.libs.killbill.OSGIConfigPropertiesService;
 import org.killbill.billing.plugin.api.notification.PluginConfigurationEventHandler;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig;
-import org.killbill.billing.plugin.simpletax.config.http.CustomFieldService;
-import org.killbill.billing.plugin.simpletax.config.http.InvoiceService;
-import org.killbill.billing.plugin.simpletax.config.http.SimpleTaxServlet;
-import org.killbill.billing.plugin.simpletax.config.http.TaxCodeController;
-import org.killbill.billing.plugin.simpletax.config.http.TaxCountryController;
-import org.killbill.billing.plugin.simpletax.config.http.VatinController;
+import org.killbill.billing.plugin.simpletax.config.http.*;
 import org.killbill.clock.Clock;
 import org.killbill.clock.DefaultClock;
-import org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase;
-import org.killbill.killbill.osgi.libs.killbill.OSGIConfigPropertiesService;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillEventDispatcher.OSGIKillbillEventHandler;
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+import java.util.Hashtable;
+
+import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
 
 /**
  * Activator class for the Simple Tax Plugin.
@@ -47,10 +42,12 @@ import org.osgi.framework.BundleContext;
  */
 public class SimpleTaxActivator extends KillbillActivatorBase {
 
+    private static final Logger logger = LoggerFactory.getLogger(SimpleTaxActivator.class);
+
     /** The name for this plugin. */
     public static final String PLUGIN_NAME = "killbill-simple-tax";
 
-    private SimpleTaxConfigurationHandler configHandler;
+    private SimpleTaxConfigurationHandler simpleTaxConfigHandler;
 
     /**
      * This method is the first to be called.
@@ -60,7 +57,7 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
      * <p>
      * {@inheritDoc}
      *
-     * @see org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase#start(org.osgi.framework.BundleContext)
+     * @see org.killbill.billing.osgi.libs.killbill.KillbillActivatorBase#start(org.osgi.framework.BundleContext)
      */
     @Override
     public void start(BundleContext context) throws Exception {
@@ -68,35 +65,38 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
         // createDefaultConfig() below
         super.start(context);
 
+        logger.info("starting bundle activator");
+
         createDefaultConfig();
         CustomFieldService customFieldService = createCustomFieldService();
 
         final SimpleTaxPlugin plugin = createPlugin(customFieldService);
-        register(InvoicePluginApi.class, plugin, context);
-        dispatcher.registerEventHandler(plugin);
+        final PluginConfigurationEventHandler configHandler = new PluginConfigurationEventHandler(simpleTaxConfigHandler);
+        register(InvoicePluginApi.class, plugin, context);        
+        dispatcher.registerEventHandlers(configHandler, plugin);
+        //;registerEventHandler(plugin);
 
         InvoiceService invoiceService = createInvoiceService();
         HttpServlet servlet = createServlet(customFieldService, invoiceService);
         register(Servlet.class, servlet, context);
     }
 
-    /**
-     * This method is called by {@link KillbillActivatorBase#start}.
-     * <p>
-     * It creates the configuration “handler” that will <em>manage</em> all the
-     * plugin configuration lifecycle (create, reconfigure, destroy), supporting
-     * the per-tenant nature of these configurations, with appropriate defaults.
-     *
-     * @see org.killbill.killbill.osgi.libs.killbill.KillbillActivatorBase#getOSGIKillbillEventHandler()
-     */
-    @Override
-    public OSGIKillbillEventHandler getOSGIKillbillEventHandler() {
-        configHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, killbillAPI, logService);
-        return new PluginConfigurationEventHandler(configHandler);
-    }
+    // /**
+    //  * This method is called by {@link KillbillActivatorBase#start}.
+    //  * <p>
+    //  * It creates the configuration “handler” that will <em>manage</em> all the
+    //  * plugin configuration lifecycle (create, reconfigure, destroy), supporting
+    //  * the per-tenant nature of these configurations, with appropriate defaults.
+    //  * @return PluginConfigurationEventHandler
+    //  *
+    //  */
+    // public OSGIKillbillEventDispatcher.OSGIKillbillEventHandler getOSGIKillbillEventHandler() {
+    //     configHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, killbillAPI);
+    //     return new PluginConfigurationEventHandler(configHandler);
+    // }
 
     /**
-     * Creates the {@linkplain #configHandler configuration manager} (called
+     * Creates the {@linkplain #simpleTaxConfigHandler configuration manager} (called
      * “config handler”) and setup the default plugin configuration.
      * <p>
      * At plugin startup time, the default configuration is based on what might
@@ -107,28 +107,28 @@ public class SimpleTaxActivator extends KillbillActivatorBase {
      * configuration manager (a.k.a. “config handler”).
      */
     private void createDefaultConfig() {
-        SimpleTaxConfig defaultConfig = configHandler.createConfigurable(getConfigService().getProperties());
-        configHandler.setDefaultConfigurable(defaultConfig);
+        simpleTaxConfigHandler = new SimpleTaxConfigurationHandler(PLUGIN_NAME, killbillAPI);
+        SimpleTaxConfig defaultConfig = simpleTaxConfigHandler.createConfigurable(getConfigService().getProperties());
+        simpleTaxConfigHandler.setDefaultConfigurable(defaultConfig);
     }
 
     private CustomFieldService createCustomFieldService() {
-        return new CustomFieldService(killbillAPI.getCustomFieldUserApi(), logService);
+        return new CustomFieldService(killbillAPI.getCustomFieldUserApi());
     }
 
     private InvoiceService createInvoiceService() {
-        return new InvoiceService(killbillAPI.getInvoiceUserApi(), logService);
+        return new InvoiceService(killbillAPI.getInvoiceUserApi());
     }
 
     private SimpleTaxPlugin createPlugin(CustomFieldService customFieldService) {
         Clock clock = new DefaultClock();
-        return new SimpleTaxPlugin(configHandler, customFieldService, killbillAPI, getConfigService(), logService,
-                clock);
+        return new SimpleTaxPlugin(simpleTaxConfigHandler, customFieldService, killbillAPI, getConfigService(), clock);
     }
 
     private HttpServlet createServlet(CustomFieldService customFieldService, InvoiceService invoiceService) {
-        TaxCountryController taxCountryController = new TaxCountryController(customFieldService, logService);
-        VatinController vatinController = new VatinController(customFieldService, logService);
-        TaxCodeController taxCodeController = new TaxCodeController(customFieldService, invoiceService, logService);
+        TaxCountryController taxCountryController = new TaxCountryController(customFieldService);
+        VatinController vatinController = new VatinController(customFieldService);
+        TaxCodeController taxCodeController = new TaxCodeController(customFieldService, invoiceService);
         return new SimpleTaxServlet(vatinController, taxCountryController, taxCodeController);
     }
 

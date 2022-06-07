@@ -16,34 +16,32 @@
  */
 package org.killbill.billing.plugin.simpletax.config.http;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static org.osgi.service.log.LogService.LOG_ERROR;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
-
-import javax.annotation.Nonnull;
-
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceApiException;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 public class InvoiceService {
     private static final long START_OFFSET = 0L;
     private static final long PAGE_SIZE = 1L;
 
     private InvoiceUserApi invoiceApi;
-    private OSGIKillbillLogService logService;
+    private static final Logger logger = LoggerFactory.getLogger(InvoiceService.class);
 
-    public InvoiceService(InvoiceUserApi invoiceApi, OSGIKillbillLogService logService) {
+    public InvoiceService(InvoiceUserApi invoiceApi) {
         super();
         this.invoiceApi = invoiceApi;
-        this.logService = logService;
     }
 
     @Nonnull
@@ -52,7 +50,7 @@ public class InvoiceService {
         try {
             invoice = invoiceApi.getInvoice(invoiceId, tenantContext);
         } catch (InvoiceApiException exc) {
-            logService.log(LOG_ERROR, "while accessing invoice [" + invoiceId + "] in order to list its items", exc);
+            logger.error("while accessing invoice [" + invoiceId + "] in order to list its items", exc);
             return newArrayList();
         }
         return invoice.getInvoiceItems();

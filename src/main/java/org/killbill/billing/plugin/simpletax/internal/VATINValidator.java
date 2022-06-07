@@ -16,21 +16,20 @@
  */
 package org.killbill.billing.plugin.simpletax.internal;
 
-import static com.google.common.primitives.Ints.tryParse;
-import static java.util.regex.Pattern.compile;
-import static org.apache.commons.lang3.StringUtils.substring;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.killbill.billing.plugin.simpletax.util.ConcurrentLazyValue;
-
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.killbill.billing.plugin.simpletax.util.ConcurrentLazyValue;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.google.common.primitives.Ints.tryParse;
+import static java.util.regex.Pattern.compile;
+import static org.apache.commons.lang3.StringUtils.substring;
 
 /**
  * A validator for VAT Identification Numbers (VATIN), based on the <a
