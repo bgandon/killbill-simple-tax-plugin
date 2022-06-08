@@ -275,7 +275,15 @@ mkdir -p $plugin_dir
 cp -v ~/.m2/repository/org/kill-bill/billing/plugin/java/simple-tax-plugin/$VERSION/simple-tax-plugin-$VERSION.jar \
     $plugin_dir
 ```
-
+**Steps to test the Simple-Tax-Plugin**  
+  -----------------------------------
+1) Installed the Simple-Tax-Plugin.
+2) Created a Simple Catalog using Product name as Standard and Plan name as Standard-Monthly. This is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_a_simple_catalog)
+3) Uploaded the plugin config. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#configuring-the-plugin)
+4) Created a new account. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_an_account)  
+5) Added a tax country for this account. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#assigning-tax-countries-to-accounts)
+6) Created a subscription under Kaui for Standard-Monthly plan. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_add_a_subscription)
+7) Checked the invoice in the Invoices tab
 
 Author and License
 ------------------
