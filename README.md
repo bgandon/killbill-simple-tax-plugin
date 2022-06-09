@@ -1,20 +1,7 @@
-<!--
-   Copyright 2015 Benjamin Gandon
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
--->
-Kill Bill Simple Tax Plugin [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/killbill-simple-tax-plugin/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
+Kill Bill Simple Tax Plugin
 ===========================
+
+This is a friendly fork of the [original plugin](https://github.com/bgandon/killbill-simple-tax-plugin) written by Benjamin Gandon and licensed under the Apache License, Version 2.0.
 
 This OSGI plugin for the [Kill Bill](http://killbill.io) platform implements
 tax codes with  fixed tax rates and cut-off dates. Tax codes can be associated
@@ -22,7 +9,7 @@ to products of the Kill Bill catalog, or specifically set on invoice items.
 
 Taxable invoice items then get properly taxed, with the applicable rate, as
 specified in tax codes. Regulation-specific rules can be adapted with custom
-implementations of the [TaxResolver](https://github.com/bgandon/killbill-simple-tax-plugin/blob/master/src/main/java/org/killbill/billing/plugin/simpletax/resolving/TaxResolver.java)
+implementations of the [TaxResolver](https://github.com/pierre/killbill-simple-tax-plugin/blob/master/src/main/java/org/killbill/billing/plugin/simpletax/resolving/TaxResolver.java)
 interface.
 
 The typical use case for this plugin is a regulatory requirement for a bunch
@@ -42,6 +29,17 @@ Configuration:
 
 1. Configure the plugin as described below (make sure your products have the right tax codes)
 2. Configure the tax country of each account using the private PUT endpoint `/plugins/killbill-simple-tax/accounts/<ACCOUNT_ID>/taxCountry`. Note: the country on the account will not be used for taxation
+
+Testing  
+-------
+
+1. Create a Simple Catalog using Product name as Standard and Plan name as Standard-Monthly. This is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_a_simple_catalog)
+2. Upload the plugin config, see [below](https://github.com/pierre/killbill-simple-tax-plugin#configuring-the-plugin)
+3. Create a new account, see [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_an_account)  
+4. Add a tax country for this account, see [here](https://github.com/pierre/killbill-simple-tax-plugin#assigning-vat-identification-numbers-to-accounts)
+5. Create a subscription for Standard-Monthly plan, see [here](https://docs.killbill.io/latest/userguide_kaui.html#_add_a_subscription)
+
+The newly created invoice should contain a tax item.
 
 How it works
 ------------
@@ -242,8 +240,8 @@ Payload structure for tax codes:
 ```
 
 
-Upcoming improvements
----------------------
+TODO improvements
+-----------------
 
 1. Implement critical user stories for European VAT:
    - B2B that have a valid VAT number aren’t charged VAT
@@ -254,41 +252,8 @@ Upcoming improvements
 4. Have i18n for tax items descriptions
 
 
-Building and Installing
------------------------
+## About
 
-Three Maven profiles are provided to help you build the plugin for various
-versions of Java.
+Kill Bill is the leading Open-Source Subscription Billing & Payments Platform. For more information about the project, go to https://killbill.io/.
 
-    mvn -P jdk16 clean package install
-    mvn -P jdk17 clean package install
-    mvn -P jdk18 clean package install
-
-Then copy the resulting JAR to `/var/tmp/bundles` or any other value set in
-the `org.killbill.osgi.bundle.install.dir` system property.
-
-```bash
-VERSION=1.0.0-SNAPSHOT
-bundles_dir=/var/tmp/bundles # or any other value set in org.killbill.osgi.bundle.install.dir
-plugin_dir=$bundles_dir/plugins/java/simple-tax-plugin/$VERSION
-mkdir -p $plugin_dir
-cp -v ~/.m2/repository/org/kill-bill/billing/plugin/java/simple-tax-plugin/$VERSION/simple-tax-plugin-$VERSION.jar \
-    $plugin_dir
-```
-**Steps to test the Simple-Tax-Plugin**  
-  -----------------------------------
-1) Installed the Simple-Tax-Plugin.
-2) Created a Simple Catalog using Product name as Standard and Plan name as Standard-Monthly. This is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_a_simple_catalog)
-3) Uploaded the plugin config. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#configuring-the-plugin)
-4) Created a new account. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_an_account)  
-5) Added a tax country for this account. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#assigning-tax-countries-to-accounts)
-6) Created a subscription under Kaui for Standard-Monthly plan. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_add_a_subscription)
-7) Checked the invoice in the Invoices tab
-
-Author and License
-------------------
-
-Copyright © 2015-2016, Benjamin Gandon
-
-As the rest of the Kill Bill platform, this simple tax plugin is released
-under the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
+Original plugin author: Benjamin Gandon.
