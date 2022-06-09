@@ -99,7 +99,7 @@ public class TaxCodeService {
                     @Override
                     public Product transform(String planName) {
                         try {
-                            Plan plan = catalog.get().findCurrentPlan(planName);
+                            Plan plan = catalog.get().findPlan(planName);
                             return plan.getProduct();
                         } catch (CatalogApiException notFound) {
                             return null;

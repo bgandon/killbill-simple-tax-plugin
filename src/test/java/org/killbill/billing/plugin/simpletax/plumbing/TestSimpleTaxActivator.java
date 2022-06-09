@@ -16,34 +16,39 @@
  */
 package org.killbill.billing.plugin.simpletax.plumbing;
 
-import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
-import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-
-import java.util.Hashtable;
-import java.util.Observable;
-import java.util.Properties;
-
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.osgi.api.OSGIConfigProperties;
 import org.killbill.billing.osgi.api.OSGIKillbill;
+import org.killbill.billing.osgi.api.config.PluginConfigServiceApi;
+import org.killbill.billing.osgi.api.config.PluginJavaConfig;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillClock;
 import org.killbill.billing.plugin.simpletax.SimpleTaxPlugin;
 import org.killbill.billing.plugin.simpletax.resolving.NullTaxResolver;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Hashtable;
+import java.util.Observable;
+import java.util.Properties;
+
+import static org.killbill.billing.osgi.api.OSGIPluginProperties.PLUGIN_NAME_PROP;
+import static org.killbill.billing.plugin.simpletax.config.SimpleTaxConfig.PROPERTY_PREFIX;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.initMocks;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 /**
  * Tests for {@link SimpleTaxActivator}.
@@ -61,6 +66,8 @@ public class TestSimpleTaxActivator {
     private OSGIConfigProperties configPropsService;
     @Mock
     private OSGIKillbill killbillMetaAPIService;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private OSGIKillbillClock clockService;
 
     private SimpleTaxActivator activator = new SimpleTaxActivator();
 
@@ -70,12 +77,21 @@ public class TestSimpleTaxActivator {
     private ArgumentCaptor<Hashtable<String, String>> props;
 
     @BeforeClass
-    public void init() throws InvalidSyntaxException {
+    public void init() throws InvalidSyntaxException, IOException {
         initMocks(this);
+
+        when(context.getBundle()).thenReturn(mock(Bundle.class));
+
+        final PluginJavaConfig pluginJavaConfig = mock(PluginJavaConfig.class);
+        when(pluginJavaConfig.getPluginVersionRoot()).thenReturn(File.createTempFile("temp", Long.toString(System.nanoTime())));
+        final PluginConfigServiceApi pluginConfigServiceApi = mock(PluginConfigServiceApi.class);
+        when(pluginConfigServiceApi.getPluginJavaConfig(anyLong())).thenReturn(pluginJavaConfig);
+        when(killbillMetaAPIService.getPluginConfigServiceApi()).thenReturn(pluginConfigServiceApi);
 
         mockService(Observable.class, observableService);
         mockService(OSGIConfigProperties.class, configPropsService);
         mockService(OSGIKillbill.class, killbillMetaAPIService);
+        mockService("org.killbill.clock.Clock", clockService.getClock());
 
         setupMinimalConfigProps();
     }
@@ -85,6 +101,13 @@ public class TestSimpleTaxActivator {
         @SuppressWarnings("unchecked")
         ServiceReference<S> serviceRef = mock(ServiceReference.class);
         when(context.getServiceReferences(clazz.getName(), null)).thenReturn(new ServiceReference<?>[] { serviceRef });
+        when(context.getService(serviceRef)).thenReturn(serviceInstance);
+    }
+
+    private <S> void mockService(String name, S serviceInstance) throws InvalidSyntaxException {
+        @SuppressWarnings("unchecked")
+        ServiceReference<S> serviceRef = mock(ServiceReference.class);
+        when(context.getServiceReferences(name, null)).thenReturn(new ServiceReference<?>[] { serviceRef });
         when(context.getService(serviceRef)).thenReturn(serviceInstance);
     }
 
@@ -98,9 +121,6 @@ public class TestSimpleTaxActivator {
     public void shouldStart() throws Exception {
         // When
         activator.start(context);
-
-        // Then
-        assertNotNull(activator.getOSGIKillbillEventHandler());
 
         verify(context).registerService(eq(InvoicePluginApi.class.getName()), plugin.capture(), props.capture());
 

@@ -20,7 +20,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.TAX_CODES_JOIN_SEPARATOR;
 import static org.killbill.billing.plugin.simpletax.config.ConvertionHelpers.splitTaxCodes;
 import static org.killbill.billing.plugin.simpletax.internal.TaxCodeService.TAX_CODES_FIELD_NAME;
-import static org.osgi.service.log.LogService.LOG_DEBUG;
 
 import java.util.List;
 import java.util.Set;
@@ -35,17 +34,19 @@ import org.killbill.billing.plugin.simpletax.internal.TaxCodeService;
 import org.killbill.billing.tenant.api.Tenant;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.customfield.CustomField;
-import org.killbill.killbill.osgi.libs.killbill.OSGIKillbillLogService;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Benjamin Gandon
  */
 public class TaxCodeController {
-    private OSGIKillbillLogService logService;
+    private static final Logger logger = LoggerFactory.getLogger(TaxCodeController.class);
+
     private CustomFieldService customFieldService;
     private InvoiceService invoiceService;
 
@@ -54,19 +55,15 @@ public class TaxCodeController {
      *            The service to use when accessing custom fields.
      * @param invoiceService
      *            The service to use when accessing invoices.
-     * @param logService
-     *            The Kill Bill log service to use.
      */
-    public TaxCodeController(CustomFieldService customFieldService, InvoiceService invoiceService,
-            OSGIKillbillLogService logService) {
+    public TaxCodeController(CustomFieldService customFieldService, InvoiceService invoiceService) {
         super();
-        this.logService = logService;
         this.customFieldService = customFieldService;
         this.invoiceService = invoiceService;
     }
 
     public List<TaxCodesGETRsc> listInvoiceTaxCodes(@Nonnull UUID invoiceId, Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(null, tenant.getId());
 
         List<InvoiceItem> items = invoiceService.findAllInvoiceItemsByInvoice(invoiceId, tenantContext);
 
@@ -97,12 +94,11 @@ public class TaxCodeController {
     }
 
     public TaxCodesGETRsc getTaxCodesOfInvoiceItem(@Nonnull UUID invoiceItemId, Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(null, tenant.getId());
 
         Invoice invoice = invoiceService.findInvoiceByInvoiceItem(invoiceItemId, tenantContext);
         if (invoice == null) {
-            logService.log(LOG_DEBUG,
-                    "No invoice found for invoice item [" + invoiceItemId + "] in tenant [" + tenant.getApiKey() + "]");
+            logger.debug("No invoice found for invoice item [" + invoiceItemId + "] in tenant [" + tenant.getApiKey() + "]");
             return null;
         }
 
@@ -132,7 +128,7 @@ public class TaxCodeController {
     }
 
     public boolean saveTaxCodesOfInvoiceItem(@Nonnull UUID invoiceItemId, TaxCodesPUTRsc taxCodes, Tenant tenant) {
-        TenantContext tenantContext = new PluginTenantContext(tenant.getId());
+        TenantContext tenantContext = new PluginTenantContext(null, tenant.getId());
         return customFieldService.saveInvoiceItemField(joinTaxCodes(taxCodes.taxCodes), TAX_CODES_FIELD_NAME,
                 invoiceItemId, tenantContext);
     }

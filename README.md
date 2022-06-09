@@ -32,6 +32,14 @@ change once in a while.
 Quick start
 -----------
 
+Installation:
+
+```
+kpm install_java_plugin simple-tax --from-source-file target/simple-tax-plugin-*-SNAPSHOT.jar --destination /var/tmp/bundles
+```
+
+Configuration:
+
 1. Configure the plugin as described below (make sure your products have the right tax codes)
 2. Configure the tax country of each account using the private PUT endpoint `/plugins/killbill-simple-tax/accounts/<ACCOUNT_ID>/taxCountry`. Note: the country on the account will not be used for taxation
 
@@ -159,10 +167,10 @@ to accounts.
 
 Method | URI                                             | OK  | Error Statuses
 -------|-------------------------------------------------|-----|-------------------------------------------
-GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 200 | 404: account ID does not exist for tenant
-PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 201 | 400: when VATIN is malformed _for sure_ (when VATIN cannot be validated, it is stored as-is) <br/> 500: when something went wrong while saving value
-GET    | /vatins                                         | 200 | -
-GET    | /vatins?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+GET    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 200 | 404: account ID does not exist for tenant
+PUT    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/vatin | 201 | 400: when VATIN is malformed _for sure_ (when VATIN cannot be validated, it is stored as-is) <br/> 500: when something went wrong while saving value
+GET    | /plugins/killbill-simple-tax/vatins                                         | 200 | -
+GET    | /plugins/killbill-simple-tax/vatins?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
 The base JSON payload for VATINs follows this structure:
 
@@ -184,10 +192,10 @@ to all accounts.)
 
 Method | URI                                                   | OK  | Error Statuses
 -------|-------------------------------------------------------|-----|------------------------------------------
-GET    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
-PUT    | /accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
-GET    | /taxCountries                                         | 200 | -
-GET    | /taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
+GET    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 200 | 404: account ID does not exist for tenant
+PUT    | /plugins/killbill-simple-tax/accounts/{accountId:\w+-\w+-\w+-\w+-\w+}/taxCountry  | 201 | 400: when tax country is malformed<br/> 500: when something went wrong while saving value
+GET    | /plugins/killbill-simple-tax/taxCountries                                         | 200 | -
+GET    | /plugins/killbill-simple-tax/taxCountries?account={accountId:\w+-\w+-\w+-\w+-\w+} | 200 | 400: when account ID is malformed
 
 The base JSON payload for tax countries follows this structure:
 
@@ -208,11 +216,11 @@ invoice generation process. New tax items or adjustment items will be created
 accordingly to properly match the newly declared taxes.
 
 ```
-GET /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
-POST /invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+GET /plugins/killbill-simple-tax/invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+POST /plugins/killbill-simple-tax/invoices/{invoiceId:\w+-\w+-\w+-\w+-\w+}/taxCodes
 
-GET /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
-PUT /invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+GET /plugins/killbill-simple-tax/invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
+PUT /plugins/killbill-simple-tax/invoiceItems/{invoiceItemId:\w+-\w+-\w+-\w+-\w+}/taxCodes
 ```
 
 Payload structure for tax codes:
@@ -267,7 +275,15 @@ mkdir -p $plugin_dir
 cp -v ~/.m2/repository/org/kill-bill/billing/plugin/java/simple-tax-plugin/$VERSION/simple-tax-plugin-$VERSION.jar \
     $plugin_dir
 ```
-
+**Steps to test the Simple-Tax-Plugin**  
+  -----------------------------------
+1) Installed the Simple-Tax-Plugin.
+2) Created a Simple Catalog using Product name as Standard and Plan name as Standard-Monthly. This is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_a_simple_catalog)
+3) Uploaded the plugin config. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#configuring-the-plugin)
+4) Created a new account. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_create_an_account)  
+5) Added a tax country for this account. It is explained [here](https://github.com/pierre/killbill-simple-tax-plugin/tree/updates-for-0.22.x#assigning-tax-countries-to-accounts)
+6) Created a subscription under Kaui for Standard-Monthly plan. It is explained [here](https://docs.killbill.io/latest/userguide_kaui.html#_add_a_subscription)
+7) Checked the invoice in the Invoices tab
 
 Author and License
 ------------------

@@ -101,7 +101,7 @@ public class TestTaxCodeService {
 
         when(catalog.get()).thenReturn(staticCatalog);
         final ArgumentCaptor<String> planName = forClass(String.class);
-        when(staticCatalog.findCurrentPlan(planName.capture())).then(new Answer<Plan>() {
+        when(staticCatalog.findPlan(planName.capture())).then(new Answer<Plan>() {
             @Override
             public Plan answer(InvocationOnMock invocation) throws Throwable {
                 String planName = (String) invocation.getArguments()[0];
